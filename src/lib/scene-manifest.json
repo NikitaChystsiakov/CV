@@ -1,0 +1,127 @@
+{
+  "AboutmeHouse": {
+    "src": "/scene/AboutmeHouse.webp",
+    "width": 1040,
+    "height": 1011
+  },
+  "arch": {
+    "src": "/scene/arch.webp",
+    "width": 1020,
+    "height": 1076
+  },
+  "bench": {
+    "src": "/scene/bench.webp",
+    "width": 420,
+    "height": 337
+  },
+  "bishop": {
+    "src": "/scene/bishop.webp",
+    "width": 138,
+    "height": 249
+  },
+  "bush": {
+    "src": "/scene/bush.webp",
+    "width": 300,
+    "height": 248
+  },
+  "casesHouse": {
+    "src": "/scene/casesHouse.webp",
+    "width": 1040,
+    "height": 1122
+  },
+  "character": {
+    "src": "/scene/character.webp",
+    "width": 240,
+    "height": 896
+  },
+  "chessboard": {
+    "src": "/scene/chessboard.webp",
+    "width": 640,
+    "height": 424
+  },
+  "end": {
+    "src": "/scene/end.webp",
+    "width": 1040,
+    "height": 687
+  },
+  "experienseHouse": {
+    "src": "/scene/experienseHouse.webp",
+    "width": 1040,
+    "height": 1024
+  },
+  "fence": {
+    "src": "/scene/fence.webp",
+    "width": 420,
+    "height": 445
+  },
+  "flashlight": {
+    "src": "/scene/flashlight.webp",
+    "width": 300,
+    "height": 451
+  },
+  "flowerbed": {
+    "src": "/scene/flowerbed.webp",
+    "width": 300,
+    "height": 207
+  },
+  "house": {
+    "src": "/scene/house.webp",
+    "width": 1040,
+    "height": 1090
+  },
+  "king": {
+    "src": "/scene/king.webp",
+    "width": 149,
+    "height": 303
+  },
+  "knight": {
+    "src": "/scene/knight.webp",
+    "width": 145,
+    "height": 239
+  },
+  "pawn": {
+    "src": "/scene/pawn.webp",
+    "width": 139,
+    "height": 217
+  },
+  "pine": {
+    "src": "/scene/pine.webp",
+    "width": 360,
+    "height": 595
+  },
+  "queen": {
+    "src": "/scene/queen.webp",
+    "width": 141,
+    "height": 267
+  },
+  "rook": {
+    "src": "/scene/rook.webp",
+    "width": 147,
+    "height": 251
+  },
+  "skillsHouse": {
+    "src": "/scene/skillsHouse.webp",
+    "width": 1040,
+    "height": 1078
+  },
+  "table": {
+    "src": "/scene/table.webp",
+    "width": 640,
+    "height": 645
+  },
+  "technologiesHouse": {
+    "src": "/scene/technologiesHouse.webp",
+    "width": 1040,
+    "height": 1117
+  },
+  "tree": {
+    "src": "/scene/tree.webp",
+    "width": 360,
+    "height": 563
+  },
+  "workbench": {
+    "src": "/scene/workbench.webp",
+    "width": 420,
+    "height": 350
+  }
+}

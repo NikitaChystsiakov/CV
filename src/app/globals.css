@@ -1,0 +1,1103 @@
+@import "tailwindcss";
+
+/* next-themes ставит класс .dark на <html> — включаем классовый dark-вариант Tailwind v4 */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  /* Палитра «чистого городка» — светлая тема */
+  --bg: #f4f1ea;
+  --bg-2: #e9e4d8;
+  --surface: #ffffff;
+  --ink: #141820;
+  --muted: #5d6875;
+  --line: #d9d3c5;
+  --accent: #0f8f84;
+  --accent-2: #e2894a;
+  --path: #c9c1af;
+  /* Полотно дороги и её бордюр: цвет подложек, на которых стоят ассеты */
+  --road: #cfc3a8;
+  --road-edge: #b3a68a;
+  --grid: rgb(20 24 32 / 0.06);
+  --cloud: #ffffff;
+  --cloud-shade: #e4ddcd;
+  /* Окружение маршрута: зелень, дерево, камень, металл */
+  --foliage: #7cae86;
+  --foliage-2: #5c8f6b;
+  --trunk: #8d6b4e;
+  --stone: #d3cbba;
+  --stone-2: #bdb3a0;
+  --metal: #9aa2a8;
+  /* Мяч светлый в обеих темах: на цвете поверхности он читался как дырка */
+  --ball: #fdfcf9;
+  --ball-line: #b6ad9c;
+  /* Тень на земле обязана быть темнее грунта в обеих темах: на --stone-2
+     в тёмной теме тени получались светлее фона и читались как лужи */
+  --shadow: #a1957f;
+  /* Земля: газоны, грунт, вода */
+  --grass: #93bb8e;
+  --grass-2: #7aa877;
+  --soil: #cdbfa4;
+  --water: #86bfd4;
+  --water-2: #b7dde8;
+  /* Поверхности браузера: выделение, скроллбар. Их тоже красит палитра, а не
+     дефолт браузера — иначе страница выглядит собранной, а не сделанной */
+  --selection: #b7e3dd;
+  --selection-ink: #0c2a28;
+  --scroll-thumb: #c4bba8;
+  --scroll-track: #ebe6da;
+
+  /* Комната дома: интерьер. Палитра снята с ассетов владельца — дома сложены
+     из песчаника и тёмного дерева: стены изнутри оштукатурены в тон камня,
+     пол и плинтус деревянные, срез стены по переднему краю — сам камень.
+     Отдельные токены, а не оттенки --surface: текст на задней стене обязан
+     держать WCAG AA сам по себе (verify меряет), и чернила комнаты считаются
+     от её штукатурки, а не от фона страницы. */
+  --room-wall: #f1e6d1;
+  /* Боковая стена в тени: угол читается разницей тона, а не линией */
+  --room-wall-side: #e0cfb2;
+  --room-floor: #c49a6b;
+  --room-floor-seam: #b78c5e;
+  --room-plinth: #8a5837;
+  /* Срез стены и перекрытия — песчаник, как цоколь домов на маршруте */
+  --room-cut: #d8c098;
+  --room-cut-shade: #c3a77c;
+  /* Доска полки: верхняя грань светлее передней — полка видна чуть сверху */
+  --room-plank: #92603d;
+  --room-plank-top: #b78359;
+  --room-slate: #fbf6ec;
+  /* Проём в соседнюю комнату: тень за дверью, тёплая, как дерево домов */
+  --room-doorway: #6a4430;
+  --room-ink: #141820;
+  --room-muted: #4d5765;
+  --room-line: #cdbd9f;
+  /* Завеса над маршрутом: комната модальная, город под ней должен уйти */
+  --room-veil: rgb(20 24 32 / 0.58);
+  /* Завеса под командной палитрой (⌘K). Легче комнатной: палитра — короткая
+     остановка на пару нажатий, город под ней должен отойти, но не пропасть */
+  --palette-veil: rgb(20 24 32 / 0.3);
+
+  /* Неоновая палитра «неблагополучного района» — задел на итерацию 6 */
+  --neon-1: #ff2fb9;
+  --neon-2: #17e0ff;
+  --neon-bg: #150d22;
+}
+
+.dark {
+  /* Ночной городок — тёмная тема */
+  --bg: #0a0f19;
+  --bg-2: #0f1624;
+  --surface: #131b2a;
+  --ink: #e8eef7;
+  --muted: #93a3b8;
+  --line: #22314a;
+  --accent: #2fd4c1;
+  --accent-2: #ffb454;
+  --path: #1e2c47;
+  --road: #182034;
+  --road-edge: #26304a;
+  --grid: rgb(232 238 247 / 0.07);
+  --cloud: #1d2b47;
+  --cloud-shade: #16203a;
+  --foliage: #2f6b52;
+  --foliage-2: #24513f;
+  --trunk: #4a3a2c;
+  --stone: #253352;
+  --stone-2: #1c2740;
+  --metal: #55606e;
+  --ball: #e9eef7;
+  --ball-line: #8d99ab;
+  --shadow: #04070d;
+  --grass: #1f4a3a;
+  --grass-2: #183b2e;
+  --soil: #1a2033;
+  --water: #17475e;
+  --water-2: #2a6d88;
+  --selection: #1d5f58;
+  --selection-ink: #e8eef7;
+  --scroll-thumb: #2b3c5a;
+  --scroll-track: #0f1624;
+
+  /* Ночью интерьер в сумерках: штукатурка уходит в синеву ночного города,
+     дерево темнеет, но остаётся тёплым — как дома под ночным фильтром */
+  --room-wall: #262a36;
+  --room-wall-side: #1d202a;
+  --room-floor: #3a2e27;
+  --room-floor-seam: #31271f;
+  --room-plinth: #4a3528;
+  --room-cut: #3b3d4a;
+  --room-cut-shade: #30323d;
+  --room-plank: #4d3627;
+  --room-plank-top: #6a4c37;
+  --room-slate: #2e3342;
+  --room-doorway: #121520;
+  --room-ink: #eef3fa;
+  --room-muted: #a9b8cc;
+  --room-line: #3a4254;
+  --room-veil: rgb(4 7 13 / 0.7);
+  --palette-veil: rgb(4 7 13 / 0.56);
+
+  --neon-1: #ff53c7;
+  --neon-2: #37e6ff;
+  --neon-bg: #0b0713;
+}
+
+/* --- Масштаб городка: один множитель на дома, декор и дорогу --------------
+   Главная жалоба владельца была в том, что на ноутбуке дома слишком крупные и
+   картинки наезжают друг на друга. Лечится это одним числом: `--town-unit` —
+   это один базовый пиксель ассета на экране. На него умножаются и размеры
+   объектов, и их смещения по карте (`src/lib/town.ts`), поэтому улица
+   уменьшается целиком и взаимное положение объектов не меняется.
+
+   Потолки взяты по трём ограничениям сразу: 1px — базовый размер (дом 460px на
+   большом экране), 0,067vw — чтобы городок с домом у обочины укладывался в
+   окно по ширине, 0,0935vh — чтобы дом не занимал больше половины экрана по
+   высоте (на ноутбуке 1280×720 именно высота и была главным ограничителем).
+
+   JS здесь не участвует намеренно: пересчёт на resize давал бы дёрганье и
+   расхождение сервера с клиентом. */
+:root {
+  --town-unit: min(1px, 0.067vw, 0.0935vh);
+  /* Тот же множитель числом — для сцен, собранных внутри себя в пикселях
+     (шахматный стол). atan2 от двух длин даёт угол, тангенс угла — число. */
+  --town-k: tan(atan2(var(--town-unit), 1px));
+}
+
+/* До 768px городок не рисуется, на экране остаются дом, текст и прямая дорога:
+   дом может быть заметно крупнее относительно окна — рядом с ним ничего нет */
+@media (max-width: 767.98px) {
+  :root {
+    --town-unit: min(0.652px, 0.1609vw, 0.0935vh);
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-2: var(--bg-2);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
+  --color-path: var(--path);
+  --color-road: var(--road);
+  --color-road-edge: var(--road-edge);
+  --color-cloud: var(--cloud);
+  --color-cloud-shade: var(--cloud-shade);
+  --color-foliage: var(--foliage);
+  --color-foliage-2: var(--foliage-2);
+  --color-trunk: var(--trunk);
+  --color-stone: var(--stone);
+  --color-stone-2: var(--stone-2);
+  --color-metal: var(--metal);
+  --color-ball: var(--ball);
+  --color-ball-line: var(--ball-line);
+  --color-shadow: var(--shadow);
+  --color-grass: var(--grass);
+  --color-grass-2: var(--grass-2);
+  --color-soil: var(--soil);
+  --color-water: var(--water);
+  --color-water-2: var(--water-2);
+  --color-selection: var(--selection);
+  --color-selection-ink: var(--selection-ink);
+  --color-room-wall: var(--room-wall);
+  --color-room-ink: var(--room-ink);
+  --color-room-muted: var(--room-muted);
+  --color-room-line: var(--room-line);
+  --color-room-veil: var(--room-veil);
+  --color-palette-veil: var(--palette-veil);
+  --color-neon-1: var(--neon-1);
+  --color-neon-2: var(--neon-2);
+  --color-neon-bg: var(--neon-bg);
+
+  --font-display: var(--font-app-display);
+  --font-sans: var(--font-app-sans);
+  --font-mono: var(--font-app-mono);
+}
+
+@layer base {
+  /* color-scheme согласован с темой: нативные контролы, полосы прокрутки и
+     системные цвета формы берут светлый или тёмный набор вместе с палитрой.
+     next-themes дублирует то же значение inline-стилем на <html> — расхождения
+     нет, CSS здесь на случай, если скрипт ещё не отработал. */
+  html {
+    color-scheme: light;
+    -webkit-tap-highlight-color: transparent;
+    /* Скроллбар тонкий и тонированный: он единственный элемент, который
+       виден на каждом экране, и дефолтный серый выпадает из палитры */
+    scrollbar-width: thin;
+    scrollbar-color: var(--scroll-thumb) var(--scroll-track);
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans), system-ui, sans-serif;
+    /* Курсор ввода и нативные чекбоксы/радио/прогресс — в акценте проекта */
+    caret-color: var(--accent);
+    accent-color: var(--accent);
+  }
+
+  /* Выделение текста: заливка из акцента, текст остаётся читаемым чернилами
+     своей темы. Полупрозрачный акцент поверх цветного текста давал грязь. */
+  ::selection {
+    background-color: var(--selection);
+    color: var(--selection-ink);
+  }
+
+  /* Фокус с клавиатуры — одна обводка на весь сайт из токена акцента.
+     Компонент со своим focus-visible перебивает это правило: :where даёт
+     нулевую специфичность. Раньше кнопка без своих классов получала
+     браузерный outline: auto, синий и не из палитры. */
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* Подчёркивание ссылок не липнет к строке */
+  :where(a) {
+    text-underline-offset: 0.18em;
+  }
+}
+
+@keyframes cloud-drift {
+  from {
+    transform: translateX(-35vw);
+  }
+  to {
+    transform: translateX(135vw);
+  }
+}
+
+/* Зацикленная партия в волейбол: мяч летает через сетку, игроки прыгают в фазе с ним.
+   Всё на transform, длительности синхронны (4.4s), иначе мяч и прыжки разъезжаются. */
+@keyframes volley-ball {
+  0% {
+    transform: translate(-68px, 0);
+  }
+  12% {
+    transform: translate(-38px, -34px);
+  }
+  25% {
+    transform: translate(0, -46px);
+  }
+  38% {
+    transform: translate(38px, -34px);
+  }
+  50% {
+    transform: translate(68px, 0);
+  }
+  62% {
+    transform: translate(38px, -34px);
+  }
+  75% {
+    transform: translate(0, -46px);
+  }
+  88% {
+    transform: translate(-38px, -34px);
+  }
+  100% {
+    transform: translate(-68px, 0);
+  }
+}
+
+/* Тень мяча: едет только по горизонтали и сжимается, когда мяч высоко.
+   Она заменила прыгающих игроков — без неё пустой корт не читается как игра. */
+@keyframes volley-shadow {
+  0% {
+    transform: translateX(-68px) scale(1);
+    opacity: 0.35;
+  }
+  25% {
+    transform: translateX(0) scale(0.62);
+    opacity: 0.2;
+  }
+  50% {
+    transform: translateX(68px) scale(1);
+    opacity: 0.35;
+  }
+  75% {
+    transform: translateX(0) scale(0.62);
+    opacity: 0.2;
+  }
+  100% {
+    transform: translateX(-68px) scale(1);
+    opacity: 0.35;
+  }
+}
+
+/* Блики на воде: только прозрачность, чтобы озеро жило без перерисовки */
+@keyframes water-shimmer {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* Мерцание звёзд в тёмной теме: анимируется только прозрачность */
+@keyframes star-twinkle {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Шахматная партия: фигура едет на свою клетку и остаётся там до конца цикла.
+   Смещение приходит из --dx/--dy на самой фигуре, поэтому одних ключевых кадров
+   хватает на все ходы, а порядок задаётся отрицательной задержкой. */
+@keyframes chess-move {
+  0%,
+  16% {
+    transform: translate(0, 0);
+  }
+  24%,
+  100% {
+    transform: translate(var(--dx), var(--dy));
+  }
+}
+
+@layer components {
+  /* Правый рельс карты маршрута: панель закреплена у края экрана и лежит выше
+     текста, поэтому контент, стоящий справа, обязан её объезжать. Отступ равен
+     тому, сколько рельс откусывает у колонки контента, и на широком экране сам
+     сходит на нет — там панель уходит в поле за контейнером. */
+  @media (min-width: 1280px) {
+    .rail-safe {
+      padding-right: max(0px, calc(212px - (100vw - 1280px) / 2));
+    }
+  }
+
+  /* Слои окружения рисуются сами по себе: изменение внутри слоя не заставляет
+     браузер пересчитывать раскладку остального маршрута. */
+  .scene-layer {
+    contain: layout paint style;
+  }
+
+  /* Ассеты городка нарисованы при дневном свете. Ночью они перекрашиваются
+     фильтром: приглушить яркость, слегка снять насыщенность и увести в холод.
+     Это не «синий свет поверх дневной картинки» — синего слоя нет, меняется
+     сама заливка. Настоящий ночной комплект картинок остаётся открытым
+     вопросом в docs/нужны-ассеты.md. */
+  :where(.dark) .scene-art {
+    filter: brightness(0.72) saturate(0.78) contrast(1.04) hue-rotate(-8deg);
+  }
+
+  /* Чёрные шахматные фигуры — временно затемнённые белые, пока владелец не
+     сгенерирует чёрный комплект. Фильтр на обёртке, а не на картинке: у неё
+     свой ночной фильтр .scene-art, и они складываются. */
+  .chess-black {
+    filter: brightness(0.42) saturate(0.55) contrast(1.15);
+  }
+
+  /* Изометрическая сетка — фон под маршрутом */
+  .iso-grid {
+    background-image:
+      repeating-linear-gradient(30deg, var(--grid) 0 1px, transparent 1px 56px),
+      repeating-linear-gradient(-30deg, var(--grid) 0 1px, transparent 1px 56px);
+  }
+
+  /* Облака: дрейф на CSS, а не на JS — их много, и каждое должно быть бесплатным.
+     Анимируется только transform, слой не участвует в раскладке. */
+  .cloud-drift {
+    animation: cloud-drift var(--cloud-duration, 90s) linear infinite;
+    animation-delay: var(--cloud-delay, 0s);
+    will-change: transform;
+  }
+
+  /* Статичный режим: дрейфа нет, и каждое облако стоит на своём месте.
+     Один общий сдвиг выстраивал их в колонну под hero-текстом — позицию
+     задаёт компонент через --cloud-x, детерминированно от индекса. */
+  @media (prefers-reduced-motion: reduce) {
+    .cloud-drift {
+      animation: none;
+      transform: translateX(var(--cloud-x, 30vw));
+    }
+  }
+
+  /* Детали-площадки. Длительности мяча и его тени обязаны совпадать. */
+  .volley-ball {
+    animation: volley-ball 4.4s linear infinite;
+  }
+
+  .volley-shadow {
+    animation: volley-shadow 4.4s linear infinite;
+  }
+
+  .star-twinkle {
+    animation: star-twinkle var(--twinkle-duration, 4s) ease-in-out infinite;
+    animation-delay: var(--twinkle-delay, 0s);
+  }
+
+  .water-shimmer {
+    animation: water-shimmer var(--shimmer-duration, 7s) ease-in-out infinite;
+    animation-delay: var(--shimmer-delay, 0s);
+  }
+
+  /* Партия: четыре хода по очереди, цикл 24 секунды */
+  .chess-move {
+    animation: chess-move 24s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .volley-ball,
+    .volley-shadow,
+    .chess-move,
+    .star-twinkle,
+    .water-shimmer {
+      animation: none;
+    }
+  }
+
+  /* --- Дорога -------------------------------------------------------------
+     Полотно, бордюр, разметка и пройденная часть — четыре обводки одного и
+     того же пути. `non-scaling-stroke` обязателен: `<svg>` растянут по высоте
+     маршрута и сжат по ширине до городка, и без него лента худела бы на
+     диагоналях и толстела на прямых. */
+  .town-road,
+  .town-kerb,
+  .route-path,
+  .town-progress {
+    fill: none;
+    vector-effect: non-scaling-stroke;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+
+  .town-kerb {
+    stroke: var(--road-edge);
+  }
+
+  .town-road {
+    stroke: var(--road);
+  }
+
+  /* Разметка по осевой: тот самый пунктир, что был у прежней дорожки.
+     Цвет — бордюрный, а не `--path`: на полотне дороги `--path` почти
+     совпадает с заливкой и пунктир пропадал */
+  .route-path {
+    stroke: var(--road-edge);
+    stroke-dasharray: 12 16;
+    opacity: 0.75;
+  }
+
+  /* Пройденная часть пути. Длину задаёт motion через stroke-dasharray */
+  .town-progress {
+    stroke: var(--accent);
+  }
+
+  /* Слой городка внутри остановки. `contain: paint` здесь нельзя: деревья за
+     домом высокие, и обрезка по краю остановки рубила бы им кроны. */
+  .town-layer {
+    contain: layout style;
+    overflow-x: clip;
+  }
+
+  /* Зарубка остановки садится на полотно дороги: до md дорога идёт по левой
+     кромке, от md — на своей клетке. Позиция задаётся утилитами прямо на
+     элементе (`route-stop.tsx`), а не правилом здесь: правило этого слоя
+     проигрывало утилите `left-6` даже внутри медиазапроса — утилиты в Tailwind
+     v4 стоят в своём слое выше, — и на десктопе зарубка сидела у левого края
+     экрана, в стороне от дороги */
+
+  /* Сцена, собранная внутри себя в пикселях, живёт в масштабе городка */
+  .town-scale {
+    transform: scale(var(--town-k, 1));
+    transform-origin: 50% 100%;
+  }
+
+  /* --- Плоская изометрия на CSS-трансформах (плейсхолдеры вместо арта) --- */
+  .iso-scene {
+    perspective: 1400px;
+  }
+
+  /* Ромб-площадка под объектом (шире самого объекта, чтобы читалась как участок) */
+  .iso-pad {
+    width: var(--iso-pad);
+    height: var(--iso-pad);
+    transform: rotateX(60deg) rotateZ(45deg);
+  }
+
+  .iso-box {
+    position: relative;
+    width: var(--iso-w);
+    height: var(--iso-w);
+    transform-style: preserve-3d;
+    transform: rotateX(60deg) rotateZ(45deg);
+  }
+
+  .iso-box__face {
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+
+  /* Крыша */
+  .iso-box__top {
+    width: var(--iso-w);
+    height: var(--iso-w);
+    transform: translateZ(var(--iso-h));
+  }
+
+  /* Стена по фронтальному ребру площадки */
+  .iso-box__side-a {
+    width: var(--iso-w);
+    height: var(--iso-h);
+    top: var(--iso-w);
+    transform-origin: center top;
+    transform: rotateX(90deg);
+  }
+
+  /* Стена по боковому ребру площадки */
+  .iso-box__side-b {
+    width: var(--iso-h);
+    height: var(--iso-w);
+    left: var(--iso-w);
+    transform-origin: left center;
+    transform: rotateY(-90deg);
+  }
+
+  /* --- Комната дома ------------------------------------------------------
+     Разрез дома: зритель стоит в проёме передней стены и смотрит внутрь.
+     Задняя стена — в плоскости экрана (z = 0), фронтально к камере: весь
+     текст живёт на ней, в настоящем размере. Боковая стена и пол идут от неё
+     НА зрителя под прямым углом, как в настоящей комнате, — текста на них нет,
+     поэтому ракурс им не вредит, а угол, плинтус и пол, уходящий в глубину,
+     и делают из плоскостей помещение.
+
+     Всё считается от ширины задней стены W и трёх чисел:
+       m  — во сколько раз передний край комнаты крупнее задней стены;
+       ox, oy — точка схода (где стоит глаз) в долях задней стены.
+     Перспектива P = 1,7·W, глубина комнаты из m: D = P·(1 − 1/m). Тогда
+     силуэт комнаты на экране — ровно m·W × m·H, и обёртка `.room-fit`
+     занимает именно его: диалог центрирует настоящий силуэт, а не заднюю
+     стену. Глаз справа (ox = 0,74) — поэтому видна левая стена, а не правая;
+     и выше середины (oy = 0,3) — поэтому виден пол. */
+  .room-fit {
+    --room-m: 1.3;
+    --room-ox: 0.74;
+    --room-oy: 0.3;
+    /* Задняя стена: не шире 900px и так, чтобы силуэт (×m) стоял в кадре
+       с воздухом по краям — завеса вокруг и есть «снаружи дома» */
+    --room-w: min(900px, (100vw - 10rem) / var(--room-m));
+    /* Высота — от ширины, но не ниже 440px: на узкой стене полке с двумя
+       ярусами иначе не хватает места, и она уходит в прокрутку */
+    --room-h: min(max(var(--room-w) * 0.58, 440px), (100svh - 10rem) / var(--room-m));
+    --room-p: calc(var(--room-w) * 1.7);
+    --room-d: calc(var(--room-p) * (1 - 1 / var(--room-m)));
+    /* Толщина среза стены и перекрытия */
+    --room-t: calc(var(--room-w) * 0.016);
+    --room-plinth-h: calc(var(--room-h) * 0.05);
+    position: relative;
+    width: calc(var(--room-w) * var(--room-m));
+    height: calc(var(--room-h) * var(--room-m));
+  }
+
+  .room-scene {
+    position: absolute;
+    inset: 0;
+    perspective: var(--room-p);
+    /* Точка схода в долях обёртки совпадает с долями задней стены: стена
+       стоит в обёртке со сдвигом ox·(m−1)·W, и ox·(m−1)·W + ox·W = ox·m·W */
+    perspective-origin: calc(var(--room-ox) * 100%) calc(var(--room-oy) * 100%);
+  }
+
+  /* Коробка комнаты: на ней живёт взгляд за курсором */
+  .room-box {
+    position: absolute;
+    left: calc(var(--room-ox) * (var(--room-m) - 1) * var(--room-w));
+    top: calc(var(--room-oy) * (var(--room-m) - 1) * var(--room-h));
+    width: var(--room-w);
+    height: var(--room-h);
+    transform-style: preserve-3d;
+  }
+
+  .room-plane {
+    position: absolute;
+  }
+
+  /* Задняя стена: в плоскости экрана, несёт вывеску и слоты */
+  .room-plane--wall {
+    inset: 0;
+    background-color: var(--room-wall);
+    color: var(--room-ink);
+    container: room-wall / inline-size;
+  }
+
+  /* Левая стена: петля на левом ребре задней стены, разворот на 90° к
+     зрителю. Петля — правое ребро элемента, поэтому лицевая сторона смотрит
+     внутрь комнаты, а не наружу */
+  .room-plane--side {
+    top: 0;
+    left: calc(var(--room-d) * -1);
+    width: var(--room-d);
+    height: 100%;
+    background-color: var(--room-wall-side);
+    transform-origin: right center;
+    transform: rotateY(90deg);
+  }
+
+  /* Пол: от нижнего ребра задней стены к зрителю. Доски идут вглубь и в
+     перспективе сходятся к точке схода — это главный признак глубины.
+     Две плоских заливки с жёстким стыком, без градиентных переходов */
+  .room-plane--floor {
+    left: 0;
+    top: 100%;
+    width: 100%;
+    height: var(--room-d);
+    background-color: var(--room-floor);
+    background-image: repeating-linear-gradient(
+      90deg,
+      var(--room-floor) 0 calc(var(--room-w) / 9 - 3px),
+      var(--room-floor-seam) calc(var(--room-w) / 9 - 3px) calc(var(--room-w) / 9)
+    );
+    transform-origin: center top;
+    transform: rotateX(90deg);
+  }
+
+  /* Срез по переднему краю: толщина перекрытия под полом и торец левой
+     стены. Это то, что делает кадр разрезом дома, а не коробкой из картона */
+  .room-cut {
+    position: absolute;
+    background-color: var(--room-cut);
+  }
+
+  .room-cut--floor {
+    left: calc(var(--room-t) * -1);
+    top: 100%;
+    width: calc(100% + var(--room-t));
+    height: var(--room-t);
+    background-color: var(--room-cut-shade);
+    transform: translateZ(var(--room-d));
+  }
+
+  .room-cut--side {
+    left: calc(var(--room-t) * -1);
+    top: 0;
+    width: var(--room-t);
+    height: 100%;
+    transform: translateZ(var(--room-d));
+  }
+
+  /* Плинтус: стык стены с полом — тоном дерева, а не линией */
+  .room-plinth {
+    position: absolute;
+    inset: auto 0 0;
+    height: var(--room-plinth-h, 14px);
+    background-color: var(--room-plinth);
+  }
+
+  /* Раскладка задней стены. Левая колонка — вывеска и стена, правая — полка.
+     Набор слотов приходит атрибутом `data-fill`, поэтому наполнение комнаты
+     не требует правок компонента: пустая колонка остаётся стеной */
+  .room-wall {
+    position: absolute;
+    inset: 7% 6% calc(var(--room-plinth-h) + 5%) 7%;
+    display: grid;
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.2fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    column-gap: 7%;
+    row-gap: 1.75rem;
+  }
+
+  .room-wall > .room-sign {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .room-wall__text {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .room-wall__shelf {
+    grid-column: 2;
+    grid-row: 1 / -1;
+    align-self: center;
+    max-height: 100%;
+  }
+
+  /* Только полка, без текста стены: полке — больше ширины, вывеске и
+     проёму хватает узкой колонки */
+  .room-plane--wall[data-fill="shelf"] .room-wall {
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.35fr);
+  }
+
+  /* Узкая задняя стена (окно около 1024px): в две колонки подписи полки
+     ломаются по слову в строку. Тогда всё встаёт в один столбец под
+     вывеской, а проём уходит — его место заняла полка */
+  @container room-wall (max-width: 700px) {
+    /* Строка текста стены растёт по содержимому, но может и ужаться: иначе
+       длинный текст выдавил бы полку за стену, а не в прокрутку */
+    .room-wall,
+    .room-plane--wall[data-fill="shelf"] .room-wall {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto minmax(0, max-content) minmax(0, 1fr);
+    }
+
+    .room-wall__text {
+      grid-row: 2;
+    }
+
+    /* Полка тянется на свою строку и прокручивается в ней, а не вылезает
+       из неё вниз под плинтус и планшет */
+    .room-wall__shelf {
+      grid-column: 1;
+      grid-row: 3;
+      align-self: stretch;
+    }
+
+    .room-plane--wall:not([data-fill~="wall"]) .room-wall__shelf {
+      grid-row: 2 / 4;
+    }
+
+    .room-doorway {
+      display: none;
+    }
+  }
+
+  /* Только стена, без полки: текст занимает всю ширину под вывеской */
+  .room-plane--wall[data-fill="wall"] .room-wall__text {
+    grid-column: 1 / -1;
+    max-width: 62ch;
+  }
+
+  /* Планшет стоит на полу перед левой колонкой — текст стены живёт выше него.
+     Верх планшета в перспективе приходится примерно на 0,73 высоты стены,
+     поэтому снизу под него отдана строка в 0,22 высоты (плюс нижний отступ
+     раскладки). Полка справа планшетом не закрыта и остаётся на всю высоту.
+     На узкой или низкой комнате три слота в эту стену не помещаются вовсе —
+     там комната разворачивается в плоскую панель (`house-room.tsx`) */
+  .room-plane--wall[data-slate] .room-wall {
+    grid-template-rows: auto minmax(0, 1fr) calc(var(--room-h) * 0.22);
+  }
+
+  /* Дверной проём в соседнюю комнату — пока левая колонка стены пустая.
+     Это архитектура, а не декор: проём держит пустую стену, как держит её в
+     настоящем доме, и арка повторяет входы домов на маршруте. Стоит на полу,
+     разрывая плинтус. Появится текст стены — проём уходит, его место занято */
+  .room-doorway {
+    position: absolute;
+    left: 13%;
+    bottom: 0;
+    width: 15%;
+    height: 60%;
+    background-color: var(--room-doorway);
+    /* Полукруглая арка: радиус — половина ширины проёма */
+    border-radius: calc(var(--room-w) * 0.075) calc(var(--room-w) * 0.075) 0 0;
+  }
+
+  .room-plane--wall:not([data-fill~="shelf"]) .room-doorway {
+    left: auto;
+    right: 12%;
+  }
+
+  .room-plane--wall[data-fill~="wall"] .room-doorway {
+    display: none;
+  }
+
+  /* Вывеска: название дома прямо на стене, дисплейным шрифтом проекта */
+  .room-sign {
+    color: var(--room-ink);
+    font-size: calc(var(--room-w) * 0.046);
+    line-height: 1.02;
+    letter-spacing: -0.025em;
+  }
+
+  /* Наклонный планшет: стоит на полу ближе к зрителю и откинут назад, как
+     чертёжная доска, — к камере он развёрнут почти лицом. Деревянная рамка —
+     та же доска, что у полки и плинтуса */
+  .room-plane--slate {
+    left: 4%;
+    bottom: 0;
+    width: 42%;
+    height: 32%;
+    background-color: var(--room-slate);
+    color: var(--room-ink);
+    border: calc(var(--room-t) * 0.45) solid var(--room-plank);
+    border-radius: 4px;
+    transform-origin: center bottom;
+    transform: translateZ(calc(var(--room-d) * 0.4)) rotateX(18deg);
+  }
+
+  /* Содержимое плоскости. Прокрутка своя: молча обрезать текст нельзя, а
+     data-lenis-prevent нужен, чтобы колесо досталось ей, а не окну. */
+  .room-surface {
+    height: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+
+  .room-wall .room-surface {
+    height: auto;
+    min-height: 0;
+  }
+
+  /* Кнопка закрытия в углу кадра: кружок штукатурки на завесе */
+  .room-close {
+    background-color: var(--room-wall);
+    color: var(--room-ink);
+    box-shadow: 0 10px 24px -12px color-mix(in oklab, var(--shadow) 80%, transparent);
+  }
+
+  .room-close:hover {
+    color: var(--accent);
+  }
+
+  /* Плоская подача: 390px и статичный режим. Перспективы здесь нет вовсе —
+     на узком экране она только мешает, а текст важнее эффекта. Это та же
+     задняя стена, развёрнутая в лист: штукатурка, внизу плинтус и полоска
+     пола. Внутри — никаких своих рамок у слотов */
+  .room-flat {
+    background-color: var(--room-wall);
+    color: var(--room-ink);
+    box-shadow: 0 24px 48px -28px color-mix(in oklab, var(--shadow) 80%, transparent);
+  }
+
+  .room-flat .room-sign {
+    font-size: clamp(1.75rem, 1.1rem + 2.6vw, 2.5rem);
+  }
+
+  .room-flat__plinth {
+    height: 12px;
+    background-color: var(--room-plinth);
+  }
+
+  .room-flat__floor {
+    height: 18px;
+    background-color: var(--room-floor);
+  }
+
+
+}
+
+/* --- Командная палитра (⌘K) -------------------------------------------------
+   Одно авторское появление: панель выезжает на 6px сверху и дорастает до
+   полного размера, стартуя уже видимой (не из нуля) — так она не «мигает»,
+   а проявляется. Экспоненциальный ease-out: основное движение в первой трети,
+   к 200мс панель уже стоит. Закрытие мгновенное: после Enter посетитель ждёт
+   город, а не анимацию ухода. Только transform и opacity. */
+@keyframes palette-in {
+  from {
+    opacity: 0.4;
+    transform: translateY(-6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes palette-veil-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@layer components {
+  .palette-panel {
+    transform-origin: 50% 0;
+    animation: palette-in 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .palette-veil {
+    animation: palette-veil-in 160ms ease-out both;
+  }
+
+  /* Статичный режим: палитра просто стоит на месте с первого кадра */
+  @media (prefers-reduced-motion: reduce) {
+    .palette-panel,
+    .palette-veil {
+      animation: none;
+    }
+  }
+}
+
+/* --- Резюме одним экраном (/cv) --------------------------------------------
+   Карта маршрута и рой огоньков висят в корневом layout на каждой странице.
+   На /cv маршрута нет: звёзды-остановки вели бы в никуда, а рой бегает по
+   тексту, который здесь надо просто прочитать. Правило вне слоёв — оно
+   перебивает `xl:block` / `md:block` из утилит Tailwind. */
+body:has([data-cv-page]) :is(nav.fixed, [data-cursor-swarm]) {
+  display: none;
+}
+
+/* Печать: резюме уходит в PDF на A4 чёрным по белому. Палитра переопределена
+   токенами, а не цветами в компонентах, — поэтому одинаково печатаются обе
+   темы, и ни одна плашка не остаётся тёмной. Панель прячет сам HUD
+   (`print:hidden`), фон-сетку — страница (`print:bg-none`). */
+@media print {
+  @page {
+    size: A4;
+    margin: 16mm 18mm 18mm;
+  }
+
+  :root,
+  .dark {
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --ink: #141820;
+    --muted: #434c58;
+    --line: #d4d4d4;
+    --accent: #0f6f67;
+    --grid: transparent;
+  }
+
+  /* next-themes пишет color-scheme инлайном на <html>, перебить его можно
+     только так: в тёмной теме браузер иначе красит полосы и поля в тёмное */
+  html {
+    color-scheme: light !important;
+  }
+
+  body {
+    background-color: var(--bg);
+  }
+
+  /* Ссылка в печати не кликается — у контактов значение уже написано
+     текстом, поэтому подчёркивание снимаем, чтобы не рябило */
+  [data-cv-page] a {
+    text-decoration: none;
+  }
+}
+
+/* --- Комната дома: полка и чернила ------------------------------------------
+   Вне слоёв намеренно. Разметку слотов собирает `src/lib/rooms.tsx` своими
+   утилитами (`space-y-3`, `text-muted`), а раскладку по ярусам решает комната.
+   Утилиты Tailwind живут в слое `utilities`, и правило из `components` их не
+   перебьёт при любой специфичности; правило вне слоёв — перебьёт. */
+
+/* Внутри комнаты общие чернила страницы подменяются комнатными: `text-muted`
+   в слоте считается от штукатурки комнаты, а не от фона маршрута */
+[data-room] {
+  --muted: var(--room-muted);
+  --line: var(--room-line);
+}
+
+/* Полка: любой список слота встаёт на ярусы по две позиции. Под каждой
+   позицией — доска, и доски соседних позиций смыкаются в одну полку через
+   промежуток колонок.
+   Названия в ярусе выровнены по верху, а не прижаты к доске: при прижатии
+   короткая подпись опускала своё название ниже соседнего, и строку названий
+   глазу приходилось собирать зигзагом. Доски от этого не разъезжаются —
+   ячейки яруса растягиваются на общую высоту, а доска висит на нижней кромке */
+.room-shelf {
+  --shelf-gap: 2.5rem;
+  padding-inline: calc(var(--shelf-gap) / 2);
+}
+
+.room-shelf ul {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--shelf-gap);
+  row-gap: 1.75rem;
+  margin-top: 1.25rem;
+}
+
+.room-shelf ul > li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  margin: 0;
+  padding-bottom: 1.35rem;
+}
+
+.room-shelf ul > li::after {
+  content: "";
+  position: absolute;
+  left: calc(var(--shelf-gap) / -2);
+  right: calc(var(--shelf-gap) / -2);
+  bottom: 0;
+  height: 0.8rem;
+  /* Верхняя грань и передняя — два плоских тона с жёстким стыком */
+  background: linear-gradient(var(--room-plank-top) 0 38%, var(--room-plank) 38% 100%);
+}
+
+/* Название позиции — табличка на полке: крупнее подписи под ним */
+.room-shelf ul > li > :first-child {
+  font-size: 1.0625rem;
+  line-height: 1.25;
+}
+
+/* В плоской подаче лист сам даёт поля: своя подушка полки сдвигала её
+   подпись с общей кромки текста. Доски при этом свисают в поля листа */
+.room-flat .room-shelf {
+  padding-inline: 0;
+}
+
+/* На узком экране ярус — одна позиция: две колонки по 150px ломают подписи */
+@media (max-width: 479.98px) {
+  .room-shelf ul {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 1.75rem;
+  }
+}
+
+/* Пока камера входит в дом, его место занимает летящая копия
+   (`route-stop.tsx`), а сам дом на маршруте прячется. Тень на земле остаётся:
+   она под завесой и дорисовывает место, куда дом вернётся */
+[data-house-away] [data-scene-object] img {
+  opacity: 0;
+}
+
+/* --- Мини-игра «Собери интерфейс» (Э9, src/components/minigame) -------------
+   Игра — контейнер: раскладка доски зависит от ширины колонки текста, а не
+   окна (колонка на 1024 уже, чем на 768 весь экран).
+
+   `--mg-u` — одна базовая единица игры: на неё умножаются размеры блоков,
+   слотов, лотка и даже текста на блоках (`mg()` в pieces.ts). Блок из лотка
+   поэтому встаёт в слот ровно по размеру на любой ширине. Лоток и макет —
+   по 260×160 единиц.
+
+   Порядок правил важен: ниже 768 доска растягивается во всю колонку, а
+   правило контейнера идёт последним и перебивает его, когда колонки хватает
+   на лоток и макет рядом (телефон боком). */
+.minigame {
+  container: minigame / inline-size;
+}
+
+.minigame-board {
+  --mg-u: 1px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+@media (max-width: 767.98px) {
+  .minigame-board {
+    --mg-u: min(1.2px, 100cqi / 260);
+  }
+}
+
+/* От 768 текст остановки мини-игры стоит слева от дороги и выровнен к ней —
+   доска прижимается туда же, к верстаку */
+@media (min-width: 768px) {
+  .minigame-board {
+    align-items: flex-end;
+  }
+}
+
+/* Лоток и макет рядом: высота остановки на ноутбуке ограничена (82svh), и
+   стопкой игра раздувала бы остановку, а маршрут считает их равными */
+@container minigame (min-width: 520px) {
+  .minigame-board {
+    --mg-u: min(1.1px, (100cqi - 24px) / 520);
+    flex-direction: row;
+    gap: 24px;
+    justify-content: flex-end;
+  }
+}
