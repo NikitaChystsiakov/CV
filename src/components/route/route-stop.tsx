@@ -11,6 +11,7 @@ import { Minigame } from "@/components/minigame/minigame";
 import { HouseRoom } from "@/components/room/house-room";
 import { useHouseEntry, type HouseEntry } from "@/components/room/use-house-entry";
 import { IsoPlaceholder } from "@/components/route/iso-placeholder";
+import { hasHousePanel, HousePanelFor } from "@/components/skills/house-panels";
 import {
   HouseEntryGlow,
   SceneObject,
@@ -248,7 +249,10 @@ function HouseEntryScene({
   entry: HouseEntry;
 }) {
   const { lang } = useLang();
-  const room = entry.mounted ? roomFor(stop.id, lang) : null;
+  // Дом-галерея (навыки, кейсы) открывает плоскую панель вместо 3D-комнаты:
+  // вход тот же — завеса, копия дома, камера сквозь дверь (блок 3)
+  const panel = hasHousePanel(stop.id);
+  const room = entry.mounted && !panel ? roomFor(stop.id, lang) : null;
   const copy = entry.copy;
 
   if (!entry.mounted) return null;
@@ -302,7 +306,14 @@ function HouseEntryScene({
         </motion.div>
       ) : null}
 
-      {room ? (
+      {panel ? (
+        <HousePanelFor
+          stopId={stop.id}
+          title={stop.title[lang]}
+          onClose={entry.leave}
+          camera={entry.room}
+        />
+      ) : room ? (
         <HouseRoom
           title={stop.title[lang]}
           slots={room}

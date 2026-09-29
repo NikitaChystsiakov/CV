@@ -14,8 +14,11 @@ const FOCUSABLE = [
 
 function focusableInside(root: HTMLElement) {
   return Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
-    // Скрытые и свёрнутые элементы в кольцо не берём: таб на них не встаёт
-    (node) => node.offsetWidth > 0 || node.offsetHeight > 0 || node === document.activeElement,
+    // Скрытые и свёрнутые элементы в кольцо не берём: таб на них не встаёт.
+    // Под `inert` — тоже: так панель дома прячет лист под своим вторым слоем
+    (node) =>
+      (node.offsetWidth > 0 || node.offsetHeight > 0 || node === document.activeElement) &&
+      !node.closest("[inert]"),
   );
 }
 

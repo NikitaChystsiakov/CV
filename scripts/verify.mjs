@@ -180,7 +180,23 @@ function roomStopIds() {
   const src = readFileSync("src/lib/rooms.tsx", "utf8");
   const match = src.match(/ROOM_STOP_IDS\s*=\s*\[([^\]]*)\]/);
   if (!match) throw new Error("Не нашёл ROOM_STOP_IDS в src/lib/rooms.tsx");
-  return [...match[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+  const always = [...match[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+  // Блок 3: дома из `ROOM_STOP_IDS_WHEN_FILLED` открываются вместе с
+  // контентом. Решаем так же, как код: дом в списке, если в `profile.ts` у
+  // него заполнено хоть одно поле (не `[]` и не `null`). Иначе, когда
+  // владелец впишет кейсы, проверка ждала бы от дома кейсов немоты
+  const filled = src.match(/ROOM_STOP_IDS_WHEN_FILLED[^=]*=\s*\{([^}]*)\}/);
+  if (!filled) return always;
+  const profileSrc = readFileSync("src/lib/profile.ts", "utf8");
+  const literal = profileSrc.slice(profileSrc.indexOf("export const profile"));
+  const hasContent = (field) => {
+    const value = literal.match(new RegExp(`^\\s*${field}:\\s*(.*)$`, "m"))?.[1]?.trim() ?? "";
+    return value !== "" && !/^(\[\s*\]|null),?$/.test(value);
+  };
+  const extra = [...filled[1].matchAll(/(\w+):\s*\[([^\]]*)\]/g)]
+    .filter((m) => [...m[2].matchAll(/"([^"]+)"/g)].some((f) => hasContent(f[1])))
+    .map((m) => m[1]);
+  return [...always, ...extra];
 }
 
 async function openPage(browser, options = {}) {

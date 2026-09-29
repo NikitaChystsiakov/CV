@@ -42,6 +42,7 @@ import {
   type CaseStudy,
   type Contact,
   type Job,
+  type Profile,
   type Skill,
 } from "@/lib/profile";
 import { trophies } from "@/lib/trophies";
@@ -56,17 +57,42 @@ export type RoomConfig = {
 };
 
 /**
+ * Дома, которые открываются вместе с контентом: id остановки → поля
+ * `profile.ts`, из которых собирается её интерьер. Дом попадает в
+ * `ROOM_STOP_IDS`, как только хоть одно из полей заполнено (непустой массив
+ * или не `null`), — владельцу достаточно вписать факты, код не трогается.
+ *
+ * Это тоже литерал, и по той же причине: `verify` (`roomStopIds()`) читает
+ * его из исходника и так же, по `profile.ts`, решает, какой дом обязан
+ * открываться, а какой — оставаться картинкой. Сюда же со временем переедут
+ * `"tech"` и `"about"` — их слоты `roomFor` уже умеет собирать.
+ */
+export const ROOM_STOP_IDS_WHEN_FILLED: Record<string, (keyof Profile)[]> = {
+  cases: ["cases"],
+};
+
+function filledRoomStopIds(): string[] {
+  const filled = (field: keyof Profile) => {
+    const value = profile[field];
+    return Array.isArray(value) ? value.length > 0 : value !== null;
+  };
+  return Object.entries(ROOM_STOP_IDS_WHEN_FILLED)
+    .filter(([, fields]) => fields.some(filled))
+    .map(([stopId]) => stopId);
+}
+
+/**
  * Остановки, у которых комната есть. `verify` читает этот массив, чтобы
  * проверить обратное утверждение: дом, которого здесь нет, не должен быть
  * кнопкой и не должен показывать курсор-руку.
  *
- * Массив — литерал, а не вычисление из `profile.ts`: `verify` читает его из
- * исходника регулярным выражением. Поэтому, когда в `profile.ts` появятся
- * кейсы, стек или «о себе», сюда надо дописать `"cases"`, `"tech"` или
- * `"about"` — `roomFor` для них уже соберёт слоты. Дом опыта в списке всегда:
- * полка трофеев у него есть при любом наполнении профиля.
+ * Начало массива — литерал: `verify` читает его из исходника регулярным
+ * выражением (до первой `]`), и это дома, открытые при любом наполнении
+ * профиля. Дом опыта — полка трофеев есть всегда; дом навыков — галерея живых
+ * демо (`src/lib/skills-demos.ts`), она от профиля не зависит. Хвост — дома
+ * из `ROOM_STOP_IDS_WHEN_FILLED`, у которых контент уже появился.
  */
-export const ROOM_STOP_IDS = ["experience"];
+export const ROOM_STOP_IDS = ["experience", "skills", ...filledRoomStopIds()];
 
 /**
  * Подписи слотов. Это строки интерфейса, а не контент остановки, но в
@@ -284,7 +310,12 @@ function orNull(config: RoomConfig): RoomConfig | null {
  *   experience — wall: где и кем работал; slate: таймлайн с датами.
  *   cases      — wall: скриншот «было/стало», задача клиента и решение;
  *                shelf: чем сделано; slate: результат. Плюс переключение
- *                между кейсами внутри комнаты (этап Э7).
+ *                между кейсами внутри комнаты (этап Э7). С блока 3 дом
+ *                кейсов открывает не эту комнату, а экспозицию-галерею
+ *                (`src/components/cases/cases-gallery.tsx`, выбор — в
+ *                `src/components/skills/house-panels.tsx`). Ветка `cases`
+ *                ниже пока не удалена: интерьеры комнат пересобираются
+ *                в блоке 4, и решать её судьбу — там.
  *   tech       — wall: тезис о подходе; shelf: стек тегами;
  *                slate: честный уровень владения по пунктам.
  *   about      — wall: почему фронтенд и куда дальше; shelf: контакты и
