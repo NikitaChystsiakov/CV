@@ -2,15 +2,41 @@
   "down": {
     "src": "/scene/walk-down.webp",
     "frames": 27,
-    "frameWidth": 92,
-    "frameHeight": 262,
-    "standHeight": 240
+    "frameWidth": 91,
+    "frameHeight": 259,
+    "standHeight": 240,
+    "footX": 48,
+    "footY": 240,
+    "scale": 0.3704
   },
   "diag": {
     "src": "/scene/walk-diag.webp",
     "frames": 38,
     "frameWidth": 112,
-    "frameHeight": 246,
-    "standHeight": 240
+    "frameHeight": 248,
+    "standHeight": 240,
+    "footX": 52,
+    "footY": 240,
+    "scale": 0.3785
+  },
+  "up": {
+    "src": "/scene/walk-up.webp",
+    "frames": 29,
+    "frameWidth": 92,
+    "frameHeight": 251,
+    "standHeight": 240,
+    "footX": 48,
+    "footY": 240,
+    "scale": 0.381
+  },
+  "updiag": {
+    "src": "/scene/walk-updiag.webp",
+    "frames": 28,
+    "frameWidth": 118,
+    "frameHeight": 250,
+    "standHeight": 240,
+    "footX": 54,
+    "footY": 240,
+    "scale": 0.4
   }
 }

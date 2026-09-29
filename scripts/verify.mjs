@@ -1549,7 +1549,11 @@ async function main() {
           );
           const art = frame?.getBoundingClientRect();
           if (!art || art.width === 0) return { shown: false };
-          const feet = { x: art.left + art.width / 2, y: art.bottom };
+          // Ноги — точка, которой кадр стоит на дороге: сам `[data-walker]`.
+          // С 29.09.2026 кадр ставится точкой ног стойки из манифеста, а не
+          // серединой низа картинки: у диагонали ноги не по центру кадра
+          const anchor = body.getBoundingClientRect();
+          const feet = { x: anchor.left, y: anchor.top };
           const svg = document.querySelector("[data-road]");
           const road = svg.querySelector("path");
           const progress = svg.querySelector("[data-route-progress]");
@@ -1723,6 +1727,205 @@ async function main() {
       }
       report("Э4", "при reduced-motion персонаж не ходит, всегда в стойке", calmFrames.size === 1 && calmFrames.has(true), `${[...calmFrames].join(",")}`);
       await walkCalm.close();
+
+      // --- Блок 1 (29.09.2026): спиной вверх, потолок шага, крупнее -----------
+      // Четыре ролика вместо двух: вниз по маршруту он идёт лицом, вверх —
+      // разворачивается спиной, а не пятится. Все позы одного роста и стоят
+      // на дороге одной точкой ног. На быстрой прокрутке шаг не мелькает.
+      const POSES_ALL = ["down", "diag", "up", "updiag"];
+      const BACK = new Set(["up", "updiag"]);
+      const poseProbe = await openPage(browser, { viewport: { width: 1440, height: 900 } });
+      for (const pose of ["up", "updiag"]) {
+        const response = await poseProbe.request.get(`${BASE}${walkManifest[pose]?.src}`);
+        report("Э4", `полоса кадров ходьбы «${pose}» отдаётся сервером`, Boolean(walkManifest[pose]) && response.ok(), `${walkManifest[pose]?.src} → ${response.status()}`);
+      }
+
+      // Рост и точка ног в пикселях: стойку каждой позы рисуем в канвас и меряем
+      // непрозрачную фигуру — «размер кадра одинаковый» ещё не значит «рост одинаковый»
+      const stands = await poseProbe.evaluate(async (poses) => {
+        const out = {};
+        for (const pose of poses) {
+          const frame = document.querySelector(`[data-walker-frame="${pose}"]`);
+          const img = frame?.querySelector("img");
+          if (!img) continue;
+          if (!img.complete) await new Promise((r) => img.addEventListener("load", r, { once: true }));
+          // Кадров в полосе вместе со стойкой: полоса во столько раз шире окна
+          const frames = Math.round(img.offsetWidth / frame.offsetWidth);
+          const cell = img.naturalWidth / frames;
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.round(cell);
+          canvas.height = img.naturalHeight;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, cell * (frames - 1), 0, cell, img.naturalHeight, 0, 0, cell, img.naturalHeight);
+          const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+          let top = Infinity;
+          let bottom = -1;
+          for (let y = 0; y < canvas.height; y += 1) {
+            for (let x = 0; x < canvas.width; x += 1) {
+              if (data[(y * canvas.width + x) * 4 + 3] < 40) continue;
+              top = Math.min(top, y);
+              bottom = Math.max(bottom, y);
+            }
+          }
+          // Экранный масштаб полосы: высота окна кадра к высоте картинки
+          const k = frame.offsetHeight / img.naturalHeight;
+          const body = document.querySelector("[data-walker]").getBoundingClientRect();
+          const box = frame.getBoundingClientRect();
+          out[pose] = {
+            height: Math.round((bottom - top + 1) * k * 10) / 10,
+            // Где низ фигуры относительно точки на дороге, px экрана
+            feetGap: Math.round((box.top + (bottom + 1) * k - body.top) * 10) / 10,
+          };
+        }
+        return out;
+      }, POSES_ALL);
+      const heights = POSES_ALL.map((pose) => stands[pose]?.height ?? 0);
+      const tallest = Math.max(...heights);
+      const shortest = Math.min(...heights);
+      report(
+        "Э4",
+        "все четыре позы одного роста (разброс ≤ 4%)",
+        shortest > 0 && (tallest - shortest) / tallest <= 0.04,
+        JSON.stringify(stands),
+      );
+      report(
+        "Э4",
+        "стойка каждой позы стоит на дороге одной точкой ног (±3px)",
+        POSES_ALL.every((pose) => stands[pose] && Math.abs(stands[pose].feetGap) <= 3),
+        POSES_ALL.map((pose) => `${pose}: ${stands[pose]?.feetGap}`).join(", "),
+      );
+      // Крупнее: при 1440×900 персонаж должен быть заметно выше прежних ~77px
+      report("Э4", "персонаж вырос: на 1440×900 не ниже 95px", shortest >= 95, `рост ${shortest}px`);
+
+      // Направление: вниз — лицом (down/diag), вверх — спиной (up/updiag).
+      // Колесо, а не scrollTo: так едет Lenis, как у посетителя
+      const visiblePose = () =>
+        poseProbe.evaluate(() => {
+          const el = [...document.querySelectorAll("[data-walker-frame]")].find(
+            (node) => getComputedStyle(node).visibility === "visible",
+          );
+          return el?.getAttribute("data-walker-frame") ?? null;
+        });
+      await poseProbe.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight * 0.3));
+      await poseProbe.waitForTimeout(800);
+      const downSeen = new Set();
+      for (let i = 0; i < 14; i += 1) {
+        await poseProbe.mouse.wheel(0, 60);
+        await poseProbe.waitForTimeout(90);
+        downSeen.add(await visiblePose());
+      }
+      const upSeen = new Set();
+      for (let i = 0; i < 14; i += 1) {
+        await poseProbe.mouse.wheel(0, -60);
+        await poseProbe.waitForTimeout(90);
+        if (i >= 3) upSeen.add(await visiblePose());
+      }
+      report(
+        "Э4",
+        "при прокрутке вниз он идёт лицом к зрителю",
+        downSeen.size > 0 && [...downSeen].every((pose) => pose && !BACK.has(pose)),
+        [...downSeen].join(", "),
+      );
+      report(
+        "Э4",
+        "при прокрутке вверх он идёт спиной, а не пятится",
+        upSeen.size > 0 && [...upSeen].every((pose) => BACK.has(pose)),
+        [...upSeen].join(", "),
+      );
+
+      // Гистерезис: дрожь на пару пикселей против хода его не разворачивает
+      await poseProbe.waitForTimeout(900);
+      for (let i = 0; i < 6; i += 1) {
+        await poseProbe.mouse.wheel(0, 50);
+        await poseProbe.waitForTimeout(60);
+      }
+      await poseProbe.waitForTimeout(700);
+      const beforeJitter = await visiblePose();
+      await poseProbe.mouse.wheel(0, -2);
+      await poseProbe.waitForTimeout(400);
+      await poseProbe.mouse.wheel(0, 2);
+      await poseProbe.waitForTimeout(400);
+      const afterJitter = await visiblePose();
+      report(
+        "Э4",
+        "дрожь прокрутки на 2px не разворачивает его",
+        !BACK.has(beforeJitter) && !BACK.has(afterJitter),
+        `${beforeJitter} → ${afterJitter}`,
+      );
+
+      // Потолок частоты: быстрая прокрутка, кадры пишем на каждом кадре браузера
+      // и считаем, сколько циклов шага прошло за секунду
+      const cadence = await poseProbe.evaluate(async (manifest) => {
+        const samples = [];
+        let stop = false;
+        const tick = (time) => {
+          const frame = [...document.querySelectorAll("[data-walker-frame]")].find(
+            (el) => getComputedStyle(el).visibility === "visible",
+          );
+          const strip = frame?.querySelector("img");
+          if (strip) {
+            const pose = frame.getAttribute("data-walker-frame");
+            const moved = new DOMMatrix(getComputedStyle(strip).transform).m41;
+            const index = Math.round((-moved / strip.offsetWidth) * (manifest[pose].frames + 1));
+            samples.push({ time, pose, index });
+          }
+          if (!stop) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+        const start = performance.now();
+        // ~6000px/с — быстрый флик колесом
+        while (performance.now() - start < 1200) {
+          window.scrollBy(0, 110);
+          await new Promise((r) => setTimeout(r, 16));
+        }
+        await new Promise((r) => setTimeout(r, 200));
+        stop = true;
+        let cycles = 0;
+        for (let i = 1; i < samples.length; i += 1) {
+          const a = samples[i - 1];
+          const b = samples[i];
+          if (a.pose !== b.pose) continue;
+          const n = manifest[b.pose].frames;
+          if (b.index >= n || a.index >= n) continue;
+          cycles += ((b.index - a.index + n) % n) / n;
+        }
+        const seconds = (samples.at(-1).time - samples[0].time) / 1000;
+        return { cyclesPerSecond: Math.round((cycles / seconds) * 100) / 100, samples: samples.length };
+      }, walkManifest);
+      report(
+        "Э4",
+        "на быстрой прокрутке шаг не чаще ~2 циклов в секунду",
+        cadence.cyclesPerSecond > 0.3 && cadence.cyclesPerSecond <= 2.4,
+        JSON.stringify(cadence),
+      );
+      report("Э4", "позы и шаг без ошибок в консоли", poseProbe.errors.length === 0, poseProbe.errors.slice(0, 2).join(" | "));
+      await poseProbe.close();
+
+      // Посадка на полотно — на всех ширинах, где он есть, включая низкие окна
+      for (const [width, height] of [
+        [1024, 768],
+        [1280, 720],
+        [1440, 900],
+        [1728, 1080],
+      ]) {
+        const view = await openPage(browser, { viewport: { width, height } });
+        let worst = { nearest: 0, halfRoad: Infinity };
+        for (const ratio of [0.1, 0.35, 0.6, 0.85]) {
+          await view.evaluate((r) => window.scrollTo(0, (document.documentElement.scrollHeight - innerHeight) * r), ratio);
+          await view.mouse.wheel(0, 1);
+          await view.waitForTimeout(1300);
+          const state = await walkerState(view);
+          if (state.shown && state.nearest - state.halfRoad > worst.nearest - worst.halfRoad) worst = state;
+        }
+        report(
+          "Э4",
+          `${width}×${height}: на всём маршруте ноги на полотне`,
+          worst.nearest <= worst.halfRoad,
+          `худший зазор: ${worst.nearest}px при полуширине ${worst.halfRoad}px`,
+        );
+        if (width === 1440) await view.screenshot({ path: `${OUT}/walker-1440.png` });
+        await view.close();
+      }
     }
 
     // --- Э5: интерьер-комната ------------------------------------------------
