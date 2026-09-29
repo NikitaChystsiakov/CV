@@ -55,6 +55,13 @@ export const MINIGAME_ACHIEVEMENT = "minigame:assembled";
  */
 export const MINIGAME_MASTER = "minigame:master";
 
+/**
+ * Ачивка волейбола (Б6): три розыгрыша подряд на площадке у дороги. Та же
+ * схема `<источник>:<что>`; победа открывает подпись трофея «Волейбол» из
+ * trophies.ts. Повторная победа ачивку не дублирует — это решает `unlock()`.
+ */
+export const VOLLEYBALL_ACHIEVEMENT = "volleyball:three-in-a-row";
+
 export function unlockedCount() {
   return read().length;
 }
