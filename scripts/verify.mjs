@@ -1530,12 +1530,17 @@ async function main() {
       );
 
       // --- Шаг 3, предпросмотр персонажа (23.09.2026) --------------------------
-      // Поза пока одна, ходьбы нет. Проверяется посадка: ноги на полотне, он едет
-      // с прокруткой, пройденная линия кончается у ног, ниже 768 его нет.
+      // Проверяется посадка: ноги на полотне, он едет с прокруткой, пройденная
+      // линия кончается у ног, ниже 768 его нет. С 29.09.2026 он ещё и ходит:
+      // проверки ходьбы — блок ниже.
       const walkerState = (view) =>
         view.evaluate(() => {
           const body = document.querySelector("[data-walker]");
-          const art = body?.querySelector("img")?.getBoundingClientRect();
+          // Окно кадра видимой позы: картинка внутри — вся полоса кадров, она шире окна
+          const frame = [...(body?.querySelectorAll("[data-walker-frame]") ?? [])].find(
+            (el) => getComputedStyle(el).visibility === "visible",
+          );
+          const art = frame?.getBoundingClientRect();
           if (!art || art.width === 0) return { shown: false };
           const feet = { x: art.left + art.width / 2, y: art.bottom };
           const svg = document.querySelector("[data-road]");
@@ -1606,6 +1611,111 @@ async function main() {
       const narrowWalker = await openPage(browser, { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
       report("Э4", "390px: персонажа нет (дорога там прямая по кромке)", !(await walkerState(narrowWalker)).shown);
       await narrowWalker.close();
+
+      // --- Шаг 3, ходьба (29.09.2026) ------------------------------------------
+      // Ролики владельца нарезаны в полосы кадров (`npm run walk`). Ломаться тут
+      // может тихо: полоса не грузится, кадр не меняется, ноги застряли в одной
+      // позе, зеркало не срабатывает — на скриншоте всё это выглядит как «стоит».
+      const walkManifest = JSON.parse(readFileSync("src/lib/walk-manifest.json", "utf8"));
+      const walkProbe = await openPage(browser, { viewport: { width: 1440, height: 900 } });
+      for (const pose of ["down", "diag"]) {
+        const response = await walkProbe.request.get(`${BASE}${walkManifest[pose].src}`);
+        report("Э4", `полоса кадров ходьбы «${pose}» отдаётся сервером`, response.ok(), `${walkManifest[pose].src} → ${response.status()}`);
+      }
+      const walkFrames = await walkProbe.evaluate(() => {
+        const strips = {};
+        for (const pose of ["down", "diag"]) {
+          const img = document.querySelector(`[data-walker-frame="${pose}"] img`);
+          strips[pose] = img ? { natural: img.naturalWidth, height: img.naturalHeight } : null;
+        }
+        return strips;
+      });
+      for (const pose of ["down", "diag"]) {
+        const { frames, frameWidth, frameHeight } = walkManifest[pose];
+        const got = walkFrames[pose];
+        report(
+          "Э4",
+          `полоса «${pose}» загрузилась и сходится с манифестом`,
+          Boolean(got) && got.natural === frameWidth * (frames + 1) && got.height === frameHeight,
+          got ? `${got.natural}x${got.height}, ждали ${frameWidth * (frames + 1)}x${frameHeight}` : "картинки нет",
+        );
+      }
+
+      // Поза в данный момент: какая видна, на сколько сдвинута полоса (px), зеркало
+      const walkNow = () =>
+        walkProbe.evaluate(() => {
+          const frames = [...document.querySelectorAll("[data-walker-frame]")];
+          const visible = frames.find((el) => getComputedStyle(el).visibility === "visible");
+          const strip = visible?.querySelector("img");
+          const moved = strip ? new DOMMatrix(getComputedStyle(strip).transform).m41 : 0;
+          const flipped = visible?.firstElementChild && getComputedStyle(visible.firstElementChild).transform !== "none";
+          return {
+            pose: visible?.getAttribute("data-walker-frame") ?? null,
+            raw: moved,
+            stripWidth: strip ? strip.offsetWidth : 0,
+            flipped: Boolean(flipped),
+          };
+        });
+      const frameIndex = (now, pose) => Math.round((-now.raw / now.stripWidth) * (walkManifest[pose].frames + 1));
+
+      // Едем по маршруту мелкими шагами прокрутки и записываем, что видно
+      const seen = { poses: new Set(), flipped: false, frames: new Set(), moved: 0 };
+      const total = await walkProbe.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
+      for (let y = 0; y < total; y += 47) {
+        await walkProbe.evaluate((to) => window.scrollTo(0, to), y);
+        await walkProbe.mouse.wheel(0, 1);
+        await walkProbe.waitForTimeout(24);
+        const now = await walkNow();
+        if (now.pose) {
+          seen.poses.add(now.pose);
+          seen.frames.add(`${now.pose}:${frameIndex(now, now.pose)}`);
+        }
+        if (now.pose === "diag" && now.flipped) seen.flipped = true;
+      }
+      report("Э4", "по маршруту он идёт и прямо, и по диагонали", seen.poses.has("down") && seen.poses.has("diag"), [...seen.poses].join(", "));
+      report(
+        "Э4",
+        "в пути кадры сменяются: не одна и не две позы",
+        seen.frames.size >= 20,
+        `разных кадров за проезд — ${seen.frames.size}`,
+      );
+      report("Э4", "на диагонали влево персонаж зеркалится", seen.flipped);
+
+      // Остановился — встал в стойку (последний кадр полосы), а не замер на шаге
+      await walkProbe.waitForTimeout(1200);
+      const rest = await walkNow();
+      report(
+        "Э4",
+        "остановившись, персонаж встаёт в позу стойки",
+        rest.pose !== null && frameIndex(rest, rest.pose) === walkManifest[rest.pose].frames,
+        `поза ${rest.pose}, кадр ${rest.pose ? frameIndex(rest, rest.pose) : "?"} из ${rest.pose ? walkManifest[rest.pose].frames : "?"}`,
+      );
+      report("Э4", "ходьба без ошибок в консоли", walkProbe.errors.length === 0, walkProbe.errors.slice(0, 2).join(" | "));
+      await walkProbe.screenshot({ path: `${OUT}/walker-standing.png` });
+      await walkProbe.close();
+
+      // reduced-motion: не ходит, стоит
+      const walkCalm = await openPage(browser, { viewport: { width: 1440, height: 900 }, reducedMotion: "reduce" });
+      const calmFrames = new Set();
+      const calmTotal = await walkCalm.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
+      for (let y = 0; y < calmTotal; y += 400) {
+        await walkCalm.evaluate((to) => window.scrollTo(0, to), y);
+        await walkCalm.waitForTimeout(40);
+        const snapshot = await walkCalm.evaluate(() => {
+          const visible = [...document.querySelectorAll("[data-walker-frame]")].find(
+            (el) => getComputedStyle(el).visibility === "visible",
+          );
+          const strip = visible?.querySelector("img");
+          return strip
+            ? { pose: visible.getAttribute("data-walker-frame"), moved: new DOMMatrix(getComputedStyle(strip).transform).m41, width: strip.offsetWidth }
+            : null;
+        });
+        if (snapshot) {
+          calmFrames.add(Math.round((-snapshot.moved / snapshot.width) * (walkManifest[snapshot.pose].frames + 1)) === walkManifest[snapshot.pose].frames);
+        }
+      }
+      report("Э4", "при reduced-motion персонаж не ходит, всегда в стойке", calmFrames.size === 1 && calmFrames.has(true), `${[...calmFrames].join(",")}`);
+      await walkCalm.close();
     }
 
     // --- Э5: интерьер-комната ------------------------------------------------

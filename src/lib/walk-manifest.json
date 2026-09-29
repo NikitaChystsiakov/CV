@@ -1,0 +1,16 @@
+{
+  "down": {
+    "src": "/scene/walk-down.webp",
+    "frames": 27,
+    "frameWidth": 92,
+    "frameHeight": 262,
+    "standHeight": 240
+  },
+  "diag": {
+    "src": "/scene/walk-diag.webp",
+    "frames": 38,
+    "frameWidth": 112,
+    "frameHeight": 246,
+    "standHeight": 240
+  }
+}

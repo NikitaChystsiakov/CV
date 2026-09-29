@@ -29,11 +29,6 @@
     "width": 1040,
     "height": 1122
   },
-  "character": {
-    "src": "/scene/character.webp",
-    "width": 240,
-    "height": 896
-  },
   "chessboard": {
     "src": "/scene/chessboard.webp",
     "width": 640,
