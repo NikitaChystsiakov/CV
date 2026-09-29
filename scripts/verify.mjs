@@ -50,8 +50,14 @@ function wanted(stage) {
 function findChromium() {
   if (process.env.CHROME_PATH) return process.env.CHROME_PATH;
 
-  const cache = join(homedir(), "Library", "Caches", "ms-playwright");
-  if (existsSync(cache)) {
+  // Кеши браузеров Playwright: macOS, Linux и явно заданный путь (облачные окружения)
+  const caches = [
+    process.env.PLAYWRIGHT_BROWSERS_PATH,
+    join(homedir(), "Library", "Caches", "ms-playwright"),
+    join(homedir(), ".cache", "ms-playwright"),
+  ].filter(Boolean);
+  for (const cache of caches) {
+    if (!existsSync(cache)) continue;
     const revisions = readdirSync(cache)
       .filter((d) => d.startsWith("chromium-"))
       .sort((a, b) => Number(b.split("-")[1]) - Number(a.split("-")[1]));
@@ -60,6 +66,7 @@ function findChromium() {
       "chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
       "chrome-mac/Chromium.app/Contents/MacOS/Chromium",
       "chrome-linux/chrome",
+      "chrome-linux64/chrome",
     ];
 
     for (const rev of revisions) {
