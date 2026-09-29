@@ -105,3 +105,12 @@ export const CHESS_ASSETS = {
   knight: chessPiece("knight", 18 / 252),
   pawn: chessPiece("pawn", 16 / 252),
 };
+
+/**
+ * Площадки у дороги, собранные из одного ассета. Корт — 300 базовых px:
+ * крупнее лавочки и шахматного стола (220), но заметно мельче дома (460),
+ * это деталь у дороги, а не здание. Мяч поверх рисуется кодом (VolleyBall).
+ */
+export const LANDMARK_ASSETS = {
+  volleyballCourt: asset("volleyball-court", 300),
+};
