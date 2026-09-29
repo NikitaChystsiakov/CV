@@ -13,19 +13,30 @@ import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
  *
  * Ходит по роликам владельца: `assets-src/videos/walks-*.mp4` режутся
  * `npm run walk` в полосы кадров одного полного шага (`public/scene/walk-*.webp`,
- * фон вырезан хромакеем). Ролика два: вниз лицом к зрителю — на прямых участках
- * ленты — и по диагонали вправо-вниз; влево диагональ зеркалится кодом. Бег и
- * ходьба спиной придут отдельными роликами: пока при прокрутке вверх кадры
- * идут обратно, то есть он пятится.
+ * фон вырезан хромакеем). Роликов четыре: вниз лицом к зрителю и вверх спиной —
+ * на прямых участках ленты, по диагонали вправо-вниз и вправо-вверх спиной — на
+ * диагоналях; влево обе диагонали зеркалятся кодом. Прокрутка вверх — это ход
+ * назад по маршруту, и он идёт туда спиной к зрителю, а не пятится.
+ *
+ * Направление — по знаку изменения пройденного пути, с гистерезисом: чтобы
+ * развернуться, он должен пройти против прежнего хода `TURN_AFTER` базовых
+ * пикселей. Иначе хвост пружины и дрожь колеса разворачивали бы его туда-сюда.
  *
  * Кадр выбирается по ПУТИ, а не по времени: фаза шага накапливается от
- * пройденного вдоль ленты расстояния, поэтому ноги не скользят по дороге на
- * любой скорости прокрутки, а назад кадры идут в обратном порядке. Остановился —
- * через `IDLE_AFTER` мс встаёт в позу стойки (последний кадр полосы).
+ * пройденного вдоль ленты расстояния, поэтому ноги не скользят по дороге. Но
+ * у быстрой прокрутки есть потолок: выше `MAX_CADENCE` шагов в секунду фаза
+ * перестаёт ускоряться — ноги чуть скользят, зато не мелькают. Скорость меряется
+ * по времени кадра (`performance.now()` между вызовами), а не по событию.
+ * Остановился — через `IDLE_AFTER` мс встаёт в стойку (последний кадр полосы).
  *
  * Кадр показывается сдвигом полосы (`transform`) внутри окна с `overflow:
  * hidden`. Никакого `background-position` и переключения `src`: только то, что
  * не пересчитывает раскладку.
+ *
+ * На дороге стоит точка ног стойки, а не угол картинки: её конвейер меряет по
+ * кедам и пишет в манифест (`feetX`, `feetY`). Ролики сняты по-разному, и
+ * низ-середина кадра у каждой позы своя — по углу поза на стыке прямой и
+ * диагонали прыгала бы. Рост у всех поз один: конвейер приводит к нему стойку.
  *
  * Где он стоит: на дороге, на высоте `FOCUS` экрана. Лента монотонна по
  * высоте, поэтому место на ней находится по `y` — без поиска по длине пути.
@@ -46,24 +57,37 @@ import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
 
 /** На какой доле высоты экрана персонаж стоит на дороге. */
 const FOCUS = 0.62;
-/** Рост стоящего персонажа в базовых пикселях городка — от роста двери домов. */
-const HEIGHT = 92;
+/**
+ * Рост стоящего персонажа в базовых пикселях городка. Было 92 — на быстрой
+ * прокрутке шаг не читался. 120 — вровень с верхом дверей домов (проём
+ * ~105–130 базовых px, замер по ассетам): человек у двери своего роста, а не великан.
+ */
+const HEIGHT = 120;
 
-type Pose = "down" | "diag";
-const POSES: Pose[] = ["down", "diag"];
+type Pose = "down" | "diag" | "up" | "upDiag";
+const POSES: Pose[] = ["down", "diag", "up", "upDiag"];
+/** Диагональные позы: их зеркалят, когда ход идёт влево */
+const DIAGONAL: Record<Pose, boolean> = { down: false, diag: true, up: false, upDiag: true };
 
 const WALK = walkManifest;
-/** Базовых пикселей городка в одном пикселе полосы кадров: у обоих роликов масштаб общий. */
+/** Базовых пикселей городка в одном пикселе полосы кадров: рост стойки у всех поз один. */
 const K = HEIGHT / WALK.down.standHeight;
 
 /**
- * Длина одного полного шага (две ноги) на экране, в пикселях полосы. Меряется
- * по ролику: скорость, с какой опорная стопа уезжает назад на «беговой
- * дорожке», умноженная на число кадров цикла (вниз ~7 px/кадр × 27, по
- * диагонали ~6,5 × 38, в пикселях исходника, ×0,375 к полосе). Мало — ноги
- * «бегут» по дороге, много — скользят.
+ * Длина полного шага (две ноги) на экране приходит из манифеста: конвейер
+ * меряет, как быстро опорная стопа едет по «беговой дорожке» ролика. Замер идёт
+ * по центру пятна кеды и выходит на пятую часть длиннее прежних ручных замеров
+ * по носку (71 и 93 px полосы вниз и по диагонали, при них ноги не скользили) —
+ * одинаково у обоих роликов, поэтому поправка одна на все позы.
  */
-const STRIDE: Record<Pose, number> = { down: 71, diag: 93 };
+const STRIDE_FIT = 0.82;
+
+/** Потолок частоты шага, полных циклов в секунду: выше ноги мелькали бы. */
+const MAX_CADENCE = 2;
+/** Сколько базовых пикселей надо пройти против прежнего хода, чтобы развернуться. */
+const TURN_AFTER = 14;
+/** Длиннее этой паузы между кадрами время не считаем: вкладка спала, это не скорость. */
+const MAX_FRAME_MS = 100;
 
 /** Столько миллисекунд без движения — и он встаёт в позу стойки. */
 const IDLE_AFTER = 140;
@@ -80,9 +104,9 @@ export function Walker({
 }) {
   const reduced = usePrefersReducedMotion();
   const bodyRef = useRef<HTMLDivElement>(null);
-  const flipRef = useRef<HTMLDivElement>(null);
-  const poseRefs = useRef<Record<Pose, HTMLDivElement | null>>({ down: null, diag: null });
-  const stripRefs = useRef<Record<Pose, HTMLImageElement | null>>({ down: null, diag: null });
+  const poseRefs = useRef<Record<Pose, HTMLDivElement | null>>({ down: null, diag: null, up: null, upDiag: null });
+  const flipRefs = useRef<Record<Pose, HTMLDivElement | null>>({ down: null, diag: null, up: null, upDiag: null });
+  const stripRefs = useRef<Record<Pose, HTMLImageElement | null>>({ down: null, diag: null, up: null, upDiag: null });
   const geometry = useRef<{
     points: { x: number; y: number }[];
     /** Длина ленты от начала до каждой вершины, px — для пройденной доли */
@@ -92,7 +116,11 @@ export function Walker({
     top: number;
     height: number;
   } | null>(null);
-  const facing = useRef(1);
+  /** Куда идёт по маршруту: +1 — вперёд (вниз по странице), −1 — назад */
+  const heading = useRef(1);
+  /** Сколько пройдено против `heading` подряд, базовые px: копится до разворота */
+  const against = useRef(0);
+  const lastTime = useRef<number | null>(null);
   const shown = useRef<Pose>("down");
   /** Фаза шага, доли цикла; растёт с расстоянием вперёд и убывает назад */
   const phase = useRef(0);
@@ -131,17 +159,40 @@ export function Walker({
     const t = b.y === a.y ? 0 : (y - a.y) / (b.y - a.y);
     const x = a.x + (b.x - a.x) * t;
 
-    // Диагональ и прямой участок — разные ролики. Лицом по ходу: на диагонали
-    // разворачивается влево-вправо зеркалом, на прямом участке к зрителю
-    const diagonal = Math.abs(b.x - a.x) > 1;
-    if (diagonal) facing.current = b.x > a.x ? 1 : -1;
-    const pose: Pose = diagonal ? "diag" : "down";
-
     body.style.transform = `translate3d(${x}px, ${y}px, 0)`;
     const distance = geo.lengths[i - 1] + Math.hypot(x - a.x, y - a.y);
     const total = geo.lengths[geo.lengths.length - 1];
     if (total > 0) walked.set(distance / total);
-    if (flipRef.current) flipRef.current.style.transform = diagonal && facing.current === -1 ? "scaleX(-1)" : "";
+
+    const step = lastDistance.current === null ? 0 : distance - lastDistance.current;
+    lastDistance.current = distance;
+    const now = performance.now();
+    const dt = lastTime.current === null ? 0 : Math.min(now - lastTime.current, MAX_FRAME_MS);
+    lastTime.current = now;
+
+    // Разворот с гистерезисом: против хода надо пройти заметный кусок
+    if (!reduced && Math.abs(step) > MOVE_EPSILON) {
+      if (Math.sign(step) === heading.current) {
+        against.current = 0;
+      } else {
+        against.current += Math.abs(step) / geo.unit;
+        if (against.current > TURN_AFTER) {
+          heading.current = -heading.current;
+          against.current = 0;
+        }
+      }
+    }
+
+    // Поза: прямой участок или диагональ, лицом или спиной. Ролики диагоналей
+    // идут вправо (вниз — вправо-вниз, спиной — вправо-вверх), влево — зеркало
+    const diagonal = Math.abs(b.x - a.x) > 1;
+    const forward = heading.current > 0;
+    const pose: Pose = diagonal ? (forward ? "diag" : "upDiag") : forward ? "down" : "up";
+    const goingRight = forward ? b.x > a.x : a.x > b.x;
+    for (const name of POSES) {
+      const flip = flipRefs.current[name];
+      if (flip && DIAGONAL[name]) flip.style.transform = name === pose && !goingRight ? "scaleX(-1)" : "";
+    }
 
     if (reduced) {
       showPose(pose);
@@ -149,12 +200,15 @@ export function Walker({
       return;
     }
 
-    const step = lastDistance.current === null ? 0 : distance - lastDistance.current;
-    lastDistance.current = distance;
-
     if (Math.abs(step) > MOVE_EPSILON) {
-      const stride = STRIDE[pose] * K * geo.unit;
-      phase.current += step / stride;
+      const stride = WALK[pose].stride * STRIDE_FIT * K * geo.unit;
+      // Фаза идёт вперёд, куда бы он ни шёл: назад он идёт лицом по ходу.
+      // Шаг против хода (до разворота) крутит кадры обратно — это доля секунды
+      let advance = (step * heading.current) / stride;
+      // Потолок частоты: быстрее двух шагов в секунду фаза не бежит
+      const limit = (MAX_CADENCE * dt) / 1000;
+      if (dt > 0 && Math.abs(advance) > limit) advance = Math.sign(advance) * limit;
+      phase.current += advance;
       const cycle = WALK[pose].frames;
       const frame = Math.floor((phase.current - Math.floor(phase.current)) * cycle);
       showPose(pose);
@@ -218,8 +272,8 @@ export function Walker({
         <div
           className="absolute left-0 top-0 -translate-x-1/2 -translate-y-1/2"
           style={{
-            width: townSize(56),
-            height: townSize(9),
+            width: townSize(72),
+            height: townSize(12),
             background:
               "radial-gradient(closest-side, color-mix(in oklab, var(--color-shadow) 45%, transparent), transparent)",
           }}
@@ -233,14 +287,24 @@ export function Walker({
                 poseRefs.current[pose] = node;
               }}
               data-walker-frame={pose}
-              className="absolute bottom-0 left-0 -translate-x-1/2"
+              className="absolute"
+              // Точка ног стойки — ровно в точке тела на дороге
               style={{
+                left: townSize(-art.feetX * art.frameWidth * K),
+                top: townSize(-art.feetY * art.frameHeight * K),
                 width: townSize(art.frameWidth * K),
                 height: townSize(art.frameHeight * K),
                 visibility: pose === "down" ? "visible" : "hidden",
               }}
             >
-              <div ref={pose === "diag" ? flipRef : undefined} className="size-full">
+              {/* Зеркало вокруг ног: развернувшись, он остаётся на том же месте */}
+              <div
+                ref={(node) => {
+                  flipRefs.current[pose] = node;
+                }}
+                className="size-full"
+                style={{ transformOrigin: `${art.feetX * 100}% 100%` }}
+              >
                 <div className="relative size-full overflow-hidden">
                   {/* Полоса кадров: окно показывает один, остальные сдвинуты за край */}
                   <Image

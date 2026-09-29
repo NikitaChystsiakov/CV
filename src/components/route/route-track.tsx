@@ -147,25 +147,26 @@ function TownRoad({ progress }: { progress: MotionValue<number> }) {
       className="pointer-events-none absolute inset-y-0 left-1/2 hidden h-full -translate-x-1/2 md:block"
       style={{ width: townSize(TOWN_HALF_WIDTH * 2) }}
     >
-      {/* Ширина полотна — полтора прежней (решение владельца 23.09.2026):
-          узкая лента терялась между домами, а по ней теперь ходит персонаж.
-          Запас до декора обочины остаётся: он стоит в пяти клетках от ленты.
+      {/* Ширина полотна — 86 базовых px (было 66, до того 44): по ленте ходит
+          персонаж ростом 120, и на узкой дороге шаг не читался. Бордюр, съезды,
+          разметка и пройденная линия растут в той же пропорции ×1,3. Декор
+          обочины отодвинут в town.ts, чтобы не налезал на полотно.
           Бордюр тоном темнее — сначала оба, потом заливка поверх: так съезд к
           двери входит в дорогу без шва. Первой идёт сама дорога: она тянется на
           весь маршрут, и проверкам не надо угадывать, какой путь тут главный */}
-      <path d={road} className="town-kerb" style={{ strokeWidth: townSize(76) }} />
-      <path d={drives} className="town-kerb" style={{ strokeWidth: townSize(42) }} />
-      <path d={drives} className="town-road" style={{ strokeWidth: townSize(34) }} />
-      <path d={road} className="town-road" style={{ strokeWidth: townSize(66) }} />
+      <path d={road} className="town-kerb" style={{ strokeWidth: townSize(99) }} />
+      <path d={drives} className="town-kerb" style={{ strokeWidth: townSize(55) }} />
+      <path d={drives} className="town-road" style={{ strokeWidth: townSize(44) }} />
+      <path d={road} className="town-road" style={{ strokeWidth: townSize(86) }} />
 
       {/* Разметка по осевой и пройденная часть пути поверх неё */}
-      <path d={road} className="route-path" style={{ strokeWidth: townSize(5) }} />
+      <path d={road} className="route-path" style={{ strokeWidth: townSize(6.5) }} />
       <path
         ref={progressRef}
         d={road}
         data-route-progress
         className="town-progress"
-        style={{ strokeWidth: townSize(8), strokeDasharray: "0 99999" }}
+        style={{ strokeWidth: townSize(10), strokeDasharray: "0 99999" }}
       />
     </svg>
   );
@@ -187,8 +188,8 @@ function MobileRoad({ progress }: { progress: MotionValue<number> }) {
       preserveAspectRatio="none"
       className="pointer-events-none absolute inset-y-0 left-6 h-full w-10 -translate-x-1/2 md:hidden"
     >
-      <path d={`M20 0 L20 ${height}`} className="town-kerb" strokeWidth={30} />
-      <path d={`M20 0 L20 ${height}`} className="town-road" strokeWidth={24} />
+      <path d={`M20 0 L20 ${height}`} className="town-kerb" strokeWidth={34} />
+      <path d={`M20 0 L20 ${height}`} className="town-road" strokeWidth={28} />
       <path d={`M20 0 L20 ${height}`} className="route-path" strokeWidth={3} />
       <path
         ref={progressRef}

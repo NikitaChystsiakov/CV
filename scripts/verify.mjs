@@ -50,8 +50,14 @@ function wanted(stage) {
 function findChromium() {
   if (process.env.CHROME_PATH) return process.env.CHROME_PATH;
 
-  const cache = join(homedir(), "Library", "Caches", "ms-playwright");
-  if (existsSync(cache)) {
+  // macOS, Linux (~/.cache) и облачный образ с PLAYWRIGHT_BROWSERS_PATH
+  const caches = [
+    process.env.PLAYWRIGHT_BROWSERS_PATH,
+    join(homedir(), "Library", "Caches", "ms-playwright"),
+    join(homedir(), ".cache", "ms-playwright"),
+  ].filter(Boolean);
+  for (const cache of caches) {
+    if (!existsSync(cache)) continue;
     const revisions = readdirSync(cache)
       .filter((d) => d.startsWith("chromium-"))
       .sort((a, b) => Number(b.split("-")[1]) - Number(a.split("-")[1]));
@@ -60,6 +66,7 @@ function findChromium() {
       "chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
       "chrome-mac/Chromium.app/Contents/MacOS/Chromium",
       "chrome-linux/chrome",
+      "chrome-linux64/chrome",
     ];
 
     for (const rev of revisions) {
@@ -1533,8 +1540,12 @@ async function main() {
       // Проверяется посадка: ноги на полотне, он едет с прокруткой, пройденная
       // линия кончается у ног, ниже 768 его нет. С 29.09.2026 он ещё и ходит:
       // проверки ходьбы — блок ниже.
+      // Ноги — не низ-середина кадра: с 29.09.2026 у каждой позы своя точка ног
+      // стойки (манифест, `feetX`/`feetY`, доли кадра). Берём её из окна кадра в
+      // пикселях — так проверка ловит и сдвиг спрайта относительно тела
+      const feetManifest = JSON.parse(readFileSync("src/lib/walk-manifest.json", "utf8"));
       const walkerState = (view) =>
-        view.evaluate(() => {
+        view.evaluate((manifest) => {
           const body = document.querySelector("[data-walker]");
           // Окно кадра видимой позы: картинка внутри — вся полоса кадров, она шире окна
           const frame = [...(body?.querySelectorAll("[data-walker-frame]") ?? [])].find(
@@ -1542,7 +1553,8 @@ async function main() {
           );
           const art = frame?.getBoundingClientRect();
           if (!art || art.width === 0) return { shown: false };
-          const feet = { x: art.left + art.width / 2, y: art.bottom };
+          const anchor = manifest[frame.getAttribute("data-walker-frame")];
+          const feet = { x: art.left + art.width * anchor.feetX, y: art.top + art.height * anchor.feetY };
           const svg = document.querySelector("[data-road]");
           const road = svg.querySelector("path");
           const progress = svg.querySelector("[data-route-progress]");
@@ -1573,7 +1585,7 @@ async function main() {
             walkedGap: walkedTo ? Math.round(Math.hypot(walkedTo.x - feet.x, walkedTo.y - feet.y)) : null,
             height: Math.round(art.height),
           };
-        });
+        }, feetManifest);
       for (const [width, height] of [
         [768, 1024],
         [1440, 900],
@@ -3814,6 +3826,16 @@ async function main() {
         report(SX, "reduced-motion: закрывается сразу", !(await reduced.$("[data-xray]")));
         await reduced.close();
       }
+    }
+
+    // --- Блоки «town-polish» (29.09.2026): каждая секция — свой модуль -----
+    // Модуль в scripts/verify/ экспортирует `stage` (имя для --stage) и
+    // `run(ctx)`. Отдельные файлы — чтобы блоки, которые делаются параллельно,
+    // не правили один и тот же участок этого файла.
+    const ctx = { browser, openPage, report, BASE, OUT, sleep, routeStopIds, roomStopIds };
+    for (const file of readdirSync(new URL("./verify/", import.meta.url)).filter((f) => f.endsWith(".mjs")).sort()) {
+      const section = await import(new URL(`./verify/${file}`, import.meta.url));
+      if (wanted(section.stage)) await section.run(ctx);
     }
 
     // --- Э6+: сюда добавляются проверки следующих этапов ---------------------
