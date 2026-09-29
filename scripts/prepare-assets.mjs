@@ -55,6 +55,7 @@ const ASSETS = {
   fence: { width: 420, background: "dark" },
   flowerbed: { width: 300 },
   workbench: { width: 420 },
+  "volleyball-court": { width: 640 },
 
   // Шахматы. Стол пришёл с именем от генератора — переименовываем на выходе
   "b380fe00-9fd3-45ec-ad3c-7e447db627d1_b45ff9eb4bf5": { width: 640, as: "table" },

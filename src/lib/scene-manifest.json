@@ -12,7 +12,7 @@
   "bench": {
     "src": "/scene/bench.webp",
     "width": 420,
-    "height": 337
+    "height": 340
   },
   "bishop": {
     "src": "/scene/bishop.webp",
@@ -113,6 +113,11 @@
     "src": "/scene/tree.webp",
     "width": 360,
     "height": 563
+  },
+  "volleyball-court": {
+    "src": "/scene/volleyball-court.webp",
+    "width": 640,
+    "height": 406
   },
   "workbench": {
     "src": "/scene/workbench.webp",
