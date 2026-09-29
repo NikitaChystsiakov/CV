@@ -11,7 +11,10 @@
  *   1. Возвращает прозрачность там, где генератор залил фон (chessboard, fence).
  *   2. Вырезает однотонный фон-хромакей (персонаж и жители приходят на
  *      пурпурном #FF00FF: зелёный съел бы бирюзовый свитер и траву).
- *   3. Обрезает по объекту и ужимает до рабочего размера в WebP: исходники
+ *   3. Чистит кайму у картинок, пришедших уже вырезанными (`defringe`): хвост
+ *      почти прозрачных цветных пикселей по контуру и тело «на 99%
+ *      непрозрачности», сквозь которое просвечивает фон.
+ *   4. Обрезает по объекту и ужимает до рабочего размера в WebP: исходники
  *      весят по полтора мегабайта, в сцене столько не нужно.
  *
  * Подложку под объектом — кусок газона или грунта — НЕ трогает. Это решение
@@ -45,6 +48,9 @@ const ASSETS = {
   house: { width: 1040 },
   arch: { width: 1040 },
   end: { width: 1040 },
+  // Фоновый дом кварталов за улицей: мельче главных, поэтому и файл вдвое уже.
+  // Пришёл уже вырезанным, но с каймой от вырезания — её чистит `defringe`
+  "bg-house-1": { width: 520, defringe: true },
 
   // Окружение
   bench: { width: 420 },
@@ -160,6 +166,66 @@ function chromaKey(data, key) {
   }
 }
 
+/**
+ * Кайма от вырезания. Генератор отдал картинку уже с альфой, но по контуру
+ * остался хвост почти прозрачных пикселей цвета старого фона (красные и
+ * розовые, альфа 1–10), а тело сохранено на 99%: альфа 252–253 вместо 255.
+ *
+ *   1. Почти прозрачное (альфа < FRINGE_FLOOR) — в ноль: это не рисунок, а мусор.
+ *   2. Почти непрозрачное (альфа ≥ FRINGE_SOLID) — в 255: тело не просвечивает.
+ *   3. Полупрозрачная кромка берёт цвет у непрозрачных соседей изнутри — так
+ *      сглаженный край остаётся мягким, но без чужого оттенка. Проходов
+ *      несколько: кромка бывает шире одного пикселя.
+ */
+const FRINGE_FLOOR = 16;
+const FRINGE_SOLID = 240;
+const FRINGE_PASSES = 3;
+
+function defringe(data, width, height) {
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i + 3] < FRINGE_FLOOR) data[i + 3] = 0;
+    else if (data[i + 3] >= FRINGE_SOLID) data[i + 3] = 255;
+  }
+
+  // Какие пиксели уже «чистые» — от них и берём цвет
+  const clean = new Uint8Array(width * height);
+  for (let p = 0; p < width * height; p += 1) clean[p] = data[p * 4 + 3] === 255 ? 1 : 0;
+
+  for (let pass = 0; pass < FRINGE_PASSES; pass += 1) {
+    const fixed = [];
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const p = y * width + x;
+        if (clean[p] || data[p * 4 + 3] === 0) continue;
+        let r = 0;
+        let g = 0;
+        let b = 0;
+        let n = 0;
+        for (let dy = -1; dy <= 1; dy += 1) {
+          for (let dx = -1; dx <= 1; dx += 1) {
+            const nx = x + dx;
+            const ny = y + dy;
+            if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+            const q = ny * width + nx;
+            if (!clean[q]) continue;
+            r += data[q * 4];
+            g += data[q * 4 + 1];
+            b += data[q * 4 + 2];
+            n += 1;
+          }
+        }
+        if (n > 0) fixed.push([p, r / n, g / n, b / n]);
+      }
+    }
+    for (const [p, r, g, b] of fixed) {
+      data[p * 4] = Math.round(r);
+      data[p * 4 + 1] = Math.round(g);
+      data[p * 4 + 2] = Math.round(b);
+      clean[p] = 1;
+    }
+  }
+}
+
 /** Границы непрозрачного содержимого. */
 function contentBox(data, width, height) {
   let minX = width;
@@ -197,6 +263,7 @@ async function prepare(name, options) {
   }
 
   if (options.key) chromaKey(data, options.key);
+  if (options.defringe) defringe(data, width, height);
 
   const box = contentBox(data, width, height);
   if (!box) throw new Error(`${name}: после подготовки не осталось содержимого`);

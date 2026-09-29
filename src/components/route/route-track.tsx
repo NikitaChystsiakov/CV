@@ -141,38 +141,51 @@ function TownRoad({ progress }: { progress: MotionValue<number> }) {
   const road = roadPath();
   const drives = drivePaths();
   const height = roadHeight();
+  const box = {
+    viewBox: `0 0 ${TOWN_HALF_WIDTH * 2} ${height}`,
+    preserveAspectRatio: "none",
+    className: "pointer-events-none absolute inset-y-0 left-1/2 hidden h-full -translate-x-1/2 md:block",
+    style: { width: townSize(TOWN_HALF_WIDTH * 2) },
+  } as const;
 
   return (
-    <svg
-      aria-hidden
-      data-road
-      viewBox={`0 0 ${TOWN_HALF_WIDTH * 2} ${height}`}
-      preserveAspectRatio="none"
-      className="pointer-events-none absolute inset-y-0 left-1/2 hidden h-full -translate-x-1/2 md:block"
-      style={{ width: townSize(TOWN_HALF_WIDTH * 2) }}
-    >
-      {/* Ширина полотна: 66 → 86 базовых px (29.09.2026). Персонаж вырос до
-          120, и на прежней ленте он стоял как на тропинке, а шаг терялся.
-          Бордюр, съезды, разметка и пройденная линия выросли в той же
-          пропорции. Бордюр тоном темнее — сначала оба, потом заливка поверх:
-          так съезд к двери входит в дорогу без шва. Первой идёт сама дорога:
-          она тянется на весь маршрут, и проверкам не надо угадывать, какой
-          путь тут главный */}
-      <path d={road} className="town-kerb" style={{ strokeWidth: townSize(ROAD_WIDTH + 13) }} />
-      <path d={drives} className="town-kerb" style={{ strokeWidth: townSize(DRIVE_WIDTH + 10) }} />
-      <path d={drives} className="town-road" style={{ strokeWidth: townSize(DRIVE_WIDTH) }} />
-      <path d={road} className="town-road" style={{ strokeWidth: townSize(ROAD_WIDTH) }} />
+    <>
+      {/* Полотно — статичный слой: рисуется один раз и дальше только едет
+          со страницей. Пройденная часть — отдельным svg ниже, в своём слое:
+          она меняется каждый кадр, и в общем svg браузер перерисовывал бы на
+          каждом кадре всю ленту на высоту маршрута вместе с тем, что лежит
+          под ней (замер на прод-сборке при CPU×4: 52–54 FPS против 60). */}
+      <svg aria-hidden data-road {...box}>
+        {/* Ширина полотна: 66 → 86 базовых px (29.09.2026). Персонаж вырос до
+            120, и на прежней ленте он стоял как на тропинке, а шаг терялся.
+            Бордюр, съезды, разметка и пройденная линия выросли в той же
+            пропорции. Бордюр тоном темнее — сначала оба, потом заливка поверх:
+            так съезд к двери входит в дорогу без шва */}
+        {/* Тротуар: светлая полоса камня по обе стороны от бордюра. С ним лента
+            читается улицей города, а не тропинкой через поле */}
+        <path d={road} className="town-walk" style={{ strokeWidth: townSize(ROAD_WIDTH + 44) }} />
+        <path d={drives} className="town-walk" style={{ strokeWidth: townSize(DRIVE_WIDTH + 26) }} />
+        <path d={road} className="town-kerb" style={{ strokeWidth: townSize(ROAD_WIDTH + 13) }} />
+        <path d={drives} className="town-kerb" style={{ strokeWidth: townSize(DRIVE_WIDTH + 10) }} />
+        <path d={drives} className="town-road" style={{ strokeWidth: townSize(DRIVE_WIDTH) }} />
+        {/* Главное полотно — последний .town-road: по нему проверки меряют ширину */}
+        <path d={road} className="town-road" style={{ strokeWidth: townSize(ROAD_WIDTH) }} />
 
-      {/* Разметка по осевой и пройденная часть пути поверх неё */}
-      <path d={road} className="route-path" style={{ strokeWidth: townSize(6) }} />
-      <path
-        ref={progressRef}
-        d={road}
-        data-route-progress
-        className="town-progress"
-        style={{ strokeWidth: townSize(10), strokeDasharray: "0 99999" }}
-      />
-    </svg>
+        {/* Разметка по осевой */}
+        <path d={road} className="route-path" style={{ strokeWidth: townSize(6) }} />
+      </svg>
+
+      {/* Пройденная часть пути поверх разметки — свой композитный слой */}
+      <svg aria-hidden data-road data-road-progress {...box} className={`${box.className} will-change-transform`}>
+        <path
+          ref={progressRef}
+          d={road}
+          data-route-progress
+          className="town-progress"
+          style={{ strokeWidth: townSize(10), strokeDasharray: "0 99999" }}
+        />
+      </svg>
+    </>
   );
 }
 

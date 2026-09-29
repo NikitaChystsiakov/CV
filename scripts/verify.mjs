@@ -1006,14 +1006,26 @@ async function main() {
         Boolean(skyGlow) && skyGlow.nested === 0 && skyGlow.gradient,
         skyGlow ? `вложенных узлов: ${skyGlow.nested}` : "нет узла",
       );
-      const landmarks = await page
-        .locator("[data-landmark]")
-        .evaluateAll((els) => els.map((el) => el.dataset.landmark));
+      // С 29.09.2026 площадок две: шахматы и волейбольный корт — оба ассеты
+      // владельца. Кодом на площадке разрешён только мяч с тенью (одобренное
+      // исключение): любой другой svg внутри значит нарисованную кодом площадку
+      const landmarks = await page.locator("[data-landmark]").evaluateAll((els) =>
+        els.map((el) => {
+          const art = [...el.querySelectorAll("img")].filter((img) =>
+            /\/scene\/[\w.-]+\.webp/.test(decodeURIComponent(img.currentSrc || img.getAttribute("src") || "")),
+          ).length;
+          const drawn = [...el.querySelectorAll("svg")].filter((svg) => {
+            const shapes = [...svg.querySelectorAll("circle, ellipse, path, rect, polygon, line, polyline")];
+            return shapes.some((shape) => !shape.closest(".volley-ball, .volley-shadow"));
+          }).length;
+          return { kind: el.dataset.landmark, art, drawn };
+        }),
+      );
       report(
         "Критика",
         "на маршруте нет площадок, нарисованных кодом",
-        landmarks.length === 1 && landmarks[0] === "chess",
-        `площадки: ${landmarks.join(", ") || "нет"}`,
+        landmarks.some((item) => item.kind === "chess") && landmarks.every((item) => item.art > 0 && item.drawn === 0),
+        landmarks.map((item) => `${item.kind}: ассетов ${item.art}, svg-рисунков ${item.drawn}`).join("; ") || "нет площадок",
       );
       const tableRatio = await page.evaluate(() => {
         const table = document.querySelector("[data-chess-scene] img")?.getBoundingClientRect();
@@ -1556,7 +1568,11 @@ async function main() {
           const feet = { x: anchor.left, y: anchor.top };
           const svg = document.querySelector("[data-road]");
           const road = svg.querySelector("path");
-          const progress = svg.querySelector("[data-route-progress]");
+          // Пройденная часть с 29.09.2026 — отдельный svg поверх полотна
+          // (свой слой, чтобы не перерисовывать ленту каждый кадр)
+          const progress = [...document.querySelectorAll("[data-route-progress]")].find(
+            (node) => node.ownerSVGElement.getBoundingClientRect().width > 0,
+          );
           const ctm = road.getScreenCTM();
           const len = road.getTotalLength();
           // Выборка ленты в экранных координатах: и расстояние от ног до оси,
@@ -1575,7 +1591,8 @@ async function main() {
             prev = q;
           }
           // Половина ширины полотна на экране: толщина штриха главной ленты
-          const halfRoad = parseFloat(getComputedStyle(svg.querySelectorAll("path")[3]).strokeWidth) / 2;
+          // Главное полотно — последний .town-road (перед ним съезды к дверям)
+          const halfRoad = parseFloat(getComputedStyle([...svg.querySelectorAll("path.town-road")].at(-1)).strokeWidth) / 2;
           return {
             shown: true,
             feet,
@@ -1926,6 +1943,191 @@ async function main() {
         if (width === 1440) await view.screenshot({ path: `${OUT}/walker-1440.png` });
         await view.close();
       }
+    }
+
+    // --- Город (блок 2, 29.09.2026): кварталы, дворы, скверы, площадка --------
+    // Давняя претензия владельца — «между домами пусто», улица читалась
+    // каталогом предметов. Плотность, второй план и текст поверх города
+    // проверяются здесь, а не остаются на глаз.
+    if (wanted("Город")) {
+      const G = "Город";
+
+      // Фоновый дом прошёл конвейер: исходник в assets-src, в public — только webp
+      report(G, "исходник фонового дома лежит в assets-src", existsSync("assets-src/bg-house-1.png"));
+      report(G, "в public нет копии фонового дома мимо конвейера", !existsSync("public/scene/house1.png"));
+      const sceneManifest = JSON.parse(readFileSync("src/lib/scene-manifest.json", "utf8"));
+      report(G, "фоновый дом есть в манифесте ассетов", Boolean(sceneManifest["bg-house-1"]), JSON.stringify(sceneManifest["bg-house-1"] ?? null));
+
+      const TOWN_SIZES = [
+        [768, 1024],
+        [1024, 768],
+        [1280, 720],
+        [1440, 900],
+        [1728, 1080],
+      ];
+      for (const [width, height] of TOWN_SIZES) {
+        const view = await openPage(browser, { viewport: { width, height } });
+        const total = await view.evaluate(() => document.documentElement.scrollHeight - innerHeight);
+        let sparsest = { count: Infinity, at: 0 };
+        const behind = new Set();
+        const tooBig = new Set();
+        const overText = new Set();
+        let backdrops = 0;
+        for (let y = 0; y <= total; y += Math.round(height * 0.4)) {
+          await view.evaluate((to) => window.scrollTo(0, to), y);
+          await view.waitForTimeout(260);
+          const frame = await view.evaluate(() => {
+            const vh = innerHeight;
+            const vw = innerWidth;
+            const onScreen = (r) => r.width > 1 && r.height > 1 && r.bottom > 0 && r.top < vh && r.right > 0 && r.left < vw;
+            // Всё, что строит город в кадре: дома, декор, кварталы, площадки
+            const town = [
+              ...document.querySelectorAll("[data-scene-object] img, [data-scenery] img, [data-backdrop] img, [data-landmark]"),
+            ].filter((el) => onScreen(el.getBoundingClientRect()));
+            // Считаем только то, что реально видно: у объекта ниже шапки
+            // (64px) и с прямоугольником в окне
+            const count = town.filter((el) => el.getBoundingClientRect().bottom > 64).length;
+
+            const houses = [...document.querySelectorAll(".town-layer [data-scene-object]")].filter((el) =>
+              onScreen(el.getBoundingClientRect()),
+            );
+            const backdrops = [...document.querySelectorAll("[data-backdrop]")].filter((el) =>
+              onScreen(el.getBoundingClientRect()),
+            );
+            const behind = [];
+            const tooBig = [];
+            const smallestHouse = houses.length
+              ? Math.min(...houses.map((el) => el.getBoundingClientRect().width))
+              : Infinity;
+            for (const bg of backdrops) {
+              const b = bg.getBoundingClientRect();
+              if (b.width >= smallestHouse * 0.7) tooBig.push(`${Math.round(b.width)} ≥ 0.7 × ${Math.round(smallestHouse)}`);
+              if (Number(getComputedStyle(bg).opacity) >= 0.9) tooBig.push("фоновый дом не бледнее главных");
+              for (const house of houses) {
+                const h = house.getBoundingClientRect();
+                const overlap = Math.min(b.right, h.right) > Math.max(b.left, h.left) && Math.min(b.bottom, h.bottom) > Math.max(b.top, h.top);
+                // Перекрываются — значит, фоновый обязан рисоваться раньше
+                // (ниже по слоям): в разметке раньше и без своего z-index
+                if (overlap && !(bg.compareDocumentPosition(house) & Node.DOCUMENT_POSITION_FOLLOWING)) {
+                  behind.push(house.closest("[data-stop]")?.id ?? "?");
+                }
+                if (overlap && getComputedStyle(bg).zIndex !== "auto") behind.push("у фонового дома свой z-index");
+              }
+            }
+
+            // Текст остановки не перекрыт вторым планом и почти не перекрыт
+            // декором: декор под текстом — фон, но заголовок не теряется
+            const over = [];
+            for (const text of document.querySelectorAll("[data-stop] h1, [data-stop] h2, [data-stop] h2 + p")) {
+              const t = text.getBoundingClientRect();
+              if (!onScreen(t)) continue;
+              const area = t.width * t.height;
+              for (const el of document.querySelectorAll("[data-backdrop] img, [data-scenery] img, [data-landmark]")) {
+                const r = el.getBoundingClientRect();
+                const w = Math.min(r.right, t.right) - Math.max(r.left, t.left);
+                const h = Math.min(r.bottom, t.bottom) - Math.max(r.top, t.top);
+                if (w <= 0 || h <= 0) continue;
+                const limit = el.closest("[data-backdrop]") ? 0 : 0.1;
+                if ((w * h) / area > limit) over.push(`${text.textContent.slice(0, 18)}…`);
+              }
+            }
+            return { count, behind, tooBig, over, backdrops: backdrops.length };
+          });
+          if (frame.count < sparsest.count) sparsest = { count: frame.count, at: y };
+          frame.behind.forEach((item) => behind.add(item));
+          frame.tooBig.forEach((item) => tooBig.add(item));
+          frame.over.forEach((item) => overText.add(item));
+          backdrops = Math.max(backdrops, frame.backdrops);
+        }
+        report(
+          G,
+          `${width}×${height}: нет пустых экранов — в каждом кадре не меньше 10 объектов города`,
+          sparsest.count >= 10,
+          `самый пустой кадр: ${sparsest.count} объектов на ${sparsest.at}px`,
+        );
+        report(G, `${width}×${height}: фоновые кварталы видны`, backdrops > 0, `в кадре до ${backdrops}`);
+        report(
+          G,
+          `${width}×${height}: фоновые дома за главными по слоям`,
+          behind.size === 0,
+          [...behind].slice(0, 3).join(", "),
+        );
+        report(
+          G,
+          `${width}×${height}: фоновые дома мельче и бледнее главных`,
+          tooBig.size === 0,
+          [...tooBig].slice(0, 3).join(", "),
+        );
+        report(G, `${width}×${height}: текст остановок не перекрыт городом`, overText.size === 0, [...overText].slice(0, 3).join(", "));
+        if (width === 1440) {
+          await view.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight * 0.3));
+          await view.waitForTimeout(900);
+          await view.screenshot({ path: `${OUT}/city-1440.png` });
+        }
+        report(G, `${width}×${height}: без ошибок в консоли`, view.errors.length === 0, view.errors.slice(0, 2).join(" | "));
+        await view.close();
+      }
+
+      // Волейбольная площадка: ассет корта, мяч кодом, подпись трофея по клику
+      for (const theme of ["light", "dark"]) {
+        const court = await openPage(browser, { viewport: { width: 1440, height: 900 }, colorScheme: theme });
+        if (theme === "dark") {
+          await court.evaluate(() => localStorage.setItem("theme", "dark"));
+          await court.reload({ waitUntil: "networkidle" });
+        }
+        const spot = court.locator('[data-landmark="volleyball"]');
+        await spot.scrollIntoViewIfNeeded();
+        await court.waitForTimeout(900);
+        const state = await court.evaluate(() => {
+          const holder = document.querySelector('[data-landmark="volleyball"]');
+          const img = holder?.querySelector("img");
+          const ball = holder?.querySelector(".volley-ball");
+          const r = holder?.getBoundingClientRect();
+          // Площадка не делит место с декором и кварталом (зона отчуждения)
+          const clash = [...document.querySelectorAll("[data-scenery] img, [data-backdrop] img")].filter((el) => {
+            const b = el.getBoundingClientRect();
+            return r && Math.min(b.right, r.right) - Math.max(b.left, r.left) > 8 && Math.min(b.bottom, r.bottom) - Math.max(b.top, r.top) > 8;
+          }).length;
+          return {
+            court: Boolean(img && img.naturalWidth > 0 && /volleyball-court/.test(img.currentSrc)),
+            ball: Boolean(ball) && getComputedStyle(ball).animationName.includes("volley-ball"),
+            width: r ? Math.round(r.width) : 0,
+            clash,
+          };
+        });
+        report(G, `${theme}: волейбольная площадка стоит ассетом корта`, state.court, JSON.stringify(state));
+        report(G, `${theme}: над кортом летает мяч`, state.ball);
+        report(G, `${theme}: площадку не перекрывает декор и квартал`, state.clash === 0, `пересечений: ${state.clash}`);
+        if (theme === "light") {
+          await spot.locator("button").first().click();
+          await court.waitForTimeout(350);
+          const volleySummary = trophySummary("volleyball");
+          const shown = await court.getByText(volleySummary.slice(0, 40), { exact: false }).isVisible();
+          report(G, "площадка по клику показывает подпись трофея «Волейбол»", shown);
+          await court.keyboard.press("Escape");
+        }
+        await court.screenshot({ path: `${OUT}/volleyball-${theme}.png` });
+        report(G, `${theme}: площадка без ошибок в консоли`, court.errors.length === 0, court.errors.slice(0, 2).join(" | "));
+        await court.close();
+      }
+
+      // reduced-motion: мяч стоит
+      const calmCourt = await openPage(browser, { viewport: { width: 1440, height: 900 }, reducedMotion: "reduce" });
+      await calmCourt.locator('[data-landmark="volleyball"]').scrollIntoViewIfNeeded();
+      const calmBall = await calmCourt.evaluate(
+        () => getComputedStyle(document.querySelector('[data-landmark="volleyball"] .volley-ball')).animationName,
+      );
+      report(G, "reduced-motion: мяч над кортом не летает", calmBall === "none", calmBall);
+      await calmCourt.close();
+
+      // Ниже 1280 площадок нет — правило проекта, как у шахмат
+      const narrowCourt = await openPage(browser, { viewport: { width: 1024, height: 768 } });
+      const narrowShown = await narrowCourt.evaluate(() => {
+        const el = document.querySelector('[data-landmark="volleyball"]');
+        return el ? getComputedStyle(el).display !== "none" : false;
+      });
+      report(G, "1024px: площадки нет (площадки — от 1280)", !narrowShown);
+      await narrowCourt.close();
     }
 
     // --- Э5: интерьер-комната ------------------------------------------------

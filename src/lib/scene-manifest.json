@@ -14,6 +14,11 @@
     "width": 420,
     "height": 340
   },
+  "bg-house-1": {
+    "src": "/scene/bg-house-1.webp",
+    "width": 520,
+    "height": 491
+  },
   "bishop": {
     "src": "/scene/bishop.webp",
     "width": 138,

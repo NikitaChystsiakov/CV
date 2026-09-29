@@ -1,18 +1,20 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useInView } from "framer-motion";
+import Image from "next/image";
 import { type ComponentType, useEffect, useRef, useState } from "react";
 
 import { ChessScene } from "@/components/route/chess-scene";
 import { SceneObject } from "@/components/route/scene-object";
 import { SceneProp } from "@/components/route/scene-prop";
+import { VolleyballScene } from "@/components/route/volleyball-scene";
 import { UI } from "@/lib/content";
 import { dashes } from "@/lib/i18n";
 import { useLang } from "@/lib/use-lang";
 import { LANDMARKS, stopTop, type LandmarkKind } from "@/lib/landmark-spots";
 import type { RouteStopConfig } from "@/lib/route";
-import { STOP_ASSETS } from "@/lib/scene-assets";
-import { townNodes, townSize, type TownNode } from "@/lib/town";
+import { BACKDROP_ASSET, STOP_ASSETS } from "@/lib/scene-assets";
+import { townBackdrop, townNodes, townSize, type BackdropNode, type TownNode } from "@/lib/town";
 import { trophyByLandmark } from "@/lib/trophies";
 
 /**
@@ -38,6 +40,8 @@ export function StopTown({ index, stop }: { index: number; stop: RouteStopConfig
       aria-hidden
       className="town-layer pointer-events-none absolute inset-0 hidden md:block"
     >
+      {/* Второй план — первым в разметке: всё, что ниже, рисуется поверх */}
+      <StopBackdrop index={index} />
       {nodes.map((node) =>
         node.kind === "house" ? (
           <TownHouse key={node.key} node={node} stop={stop} alt={stop.title[lang]} />
@@ -45,6 +49,52 @@ export function StopTown({ index, stop }: { index: number; stop: RouteStopConfig
           <TownItem key={node.key} node={node} />
         ),
       )}
+    </div>
+  );
+}
+
+/**
+ * Кварталы за улицей: ряды фоновых домов по внешним краям, за домами
+ * маршрута. Один ассет владельца на весь город — повтор прячут зеркало,
+ * сдвиг тона и дымка (прозрачность смешивает дом с фоном страницы в обеих
+ * темах). Фильтр тона стоит на обёртке: у самой картинки свой ночной
+ * `.scene-art`, и на одном элементе они бы не сложились.
+ *
+ * Монтируется лениво, когда остановка подъезжает на экран: объектов в
+ * городе стало втрое больше, а дальние кварталы не нужны, пока их не видно.
+ */
+function StopBackdrop({ index }: { index: number }) {
+  const holder = useRef<HTMLDivElement>(null);
+  const near = useInView(holder, { once: true, margin: "100% 0px 100% 0px" });
+  const nodes = townBackdrop(index);
+
+  return (
+    <div ref={holder} className="absolute inset-0">
+      {near ? nodes.map((node) => <BackdropHouse key={node.key} node={node} />) : null}
+    </div>
+  );
+}
+
+function BackdropHouse({ node }: { node: BackdropNode }) {
+  const asset = BACKDROP_ASSET;
+  return (
+    <div data-backdrop className="absolute" style={{ ...anchor(node), opacity: node.opacity }}>
+      <div
+        style={{
+          width: townSize(asset.display * node.scale),
+          filter: node.tone,
+          transform: node.flip ? "scaleX(-1)" : undefined,
+        }}
+      >
+        <Image
+          src={asset.src}
+          alt=""
+          width={asset.width}
+          height={asset.height}
+          unoptimized
+          className="scene-art h-auto w-full select-none"
+        />
+      </div>
     </div>
   );
 }
@@ -99,7 +149,7 @@ function TownItem({ node }: { node: TownNode }) {
  * общий множитель городка, вдоль — доля высоты остановки. Смещение на
  * −50%/−100% ставит объект основанием на точку клетки.
  */
-function anchor(node: TownNode) {
+function anchor(node: { left: number; top: number }) {
   return {
     left: `calc(50% + ${townSize(node.left)})`,
     top: `${node.top}%`,
@@ -123,13 +173,10 @@ export function SceneryLandmarks() {
   );
 }
 
-/**
- * Какой компонент рисует площадку. Волейбола здесь пока нет: SVG-корт убран,
- * площадка вернётся ассетом владельца с мячом поверх (landmarks.tsx,
- * docs/нужны-ассеты.md).
- */
+/** Какой компонент рисует площадку. */
 const LANDMARK_SCENES: Record<LandmarkKind, ComponentType> = {
   chess: ChessScene,
+  volleyball: VolleyballScene,
 };
 
 /**

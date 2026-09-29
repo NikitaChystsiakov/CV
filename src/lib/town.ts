@@ -70,6 +70,12 @@ type TownStop = {
   drive: [Cell, Cell];
   /** Декор поимённо вокруг дома (docs/город.md, раздел 3) */
   props: TownProp[];
+  /** Вариант двора перед домом (`YARDS`), `null` — двора нет */
+  yard: number | null;
+  /** Вариант сквера над текстом (`SQUARES`), `null` — сквера нет */
+  square: number | null;
+  /** Квартал фоновых домов под текстом; по умолчанию есть */
+  backdrop?: boolean;
 };
 
 /**
@@ -86,185 +92,220 @@ const ROAD_SIDE = 10; // обочина: 10 клеток от осевой
 const ROAD_TURN = 10; // на какой глубине полотно уже вышло на обочину
 
 /**
- * Места, которые повторяются от остановки к остановке. Держать их в одном
- * месте важнее красоты таблицы: под домом и текстом ставить нельзя, а свободных
- * полос всего четыре — перед домом, за домом, обочина со стороны текста и
- * полоса между осевой и полотном.
+ * Город, а не выставка предметов (29.09.2026).
  *
- * F — перед домом (дом кончается на d = 41, поэтому объект не должен
- *     доставать до него верхушкой: чем выше объект, тем больше d);
- * B — за домом, выше его крыши;
- * C — ближняя обочина, между осевой линией и полотном;
- * T — сторона текста, только выше и ниже колонки с текстом.
+ * Прежде вдоль улицы стояли одиночные предметы, каждый на своём газоне, и
+ * улица читалась как каталог. Теперь декор собран в группы, и у каждой
+ * остановки три одинаковые по смыслу зоны — меняется только их наполнение:
+ *
+ *   ДВОР — перед домом (d 42–57, сторона дома): клумбы у входа, фонари парой
+ *   через дорогу, лавочка лицом к дороге, урна у лавочки, дерево на углу.
+ *
+ *   СКВЕР — над текстом (d 0–16, сторона текста). Он продолжает двор
+ *   предыдущей остановки: соседние остановки зеркальны, поэтому двор одной и
+ *   сквер следующей стоят на одной стороне улицы и складываются в один
+ *   участок между домами — там, где раньше был пустой экран.
+ *
+ *   КВАРТАЛ — ряд фоновых домов (`BACKDROP`) под текстом (d 41–58, сторона
+ *   текста). Это прямо за крышей дома следующей остановки: главный дом стоит
+ *   на фоне улицы, а не в поле.
+ *
+ * Высоты объектов в клетках глубины (одна клетка — 12,7 базовых px): дерево
+ * ~14, ель ~13, забор ~10, лавочка ~8, фонарь ~7, куст ~6, клумба ~6, урна ~4,
+ * фоновый дом ~17. Якорь — низ объекта, поэтому объект занимает d от
+ * «якорь − высота» до «якорь». Дом кончается на d = 41, и всё, что стоит в
+ * полосе дома, обязано начинаться ниже.
+ *
+ * Лавочка в ассете смотрит влево-вниз: справа от дороги она без зеркала
+ * смотрит на дорогу, слева её надо зеркалить.
  */
-const F1: Cell = { x: 14, d: 49 };
-const F2: Cell = { x: 22, d: 51 };
-const F3: Cell = { x: 29, d: 49 };
-const F4: Cell = { x: 18, d: 46 }; // только для низких объектов (урна)
-const B1: Cell = { x: 16, d: 5 };
-const B2: Cell = { x: 27, d: 6 };
-// Полотно с 29.09.2026 шире (86 базовых px), лавочка в 5 клетках от осевой
-// касалась бордюра — ближняя обочина отступила на клетку
-const C1: Cell = { x: 5, d: 16 };
-const C2: Cell = { x: 4, d: 30 };
-const T1: Cell = { x: -13, d: 8 };
-const T2: Cell = { x: -25, d: 12 };
-const T3: Cell = { x: -14, d: 50 };
+
+/** Двор: три варианта, чтобы соседние дворы не повторялись. */
+const YARDS: TownProp[][] = [
+  [
+    { x: 5.5, d: 47, name: "lamp" },
+    { x: 14, d: 47, name: "lamp", flip: true },
+    { x: 18.5, d: 50, name: "flowerbed" },
+    { x: 24, d: 49, name: "flowerbed" },
+    { x: 28.5, d: 55, name: "bench" },
+    { x: 23, d: 55, name: "trash" },
+  ],
+  [
+    { x: 5.5, d: 47, name: "lamp" },
+    { x: 14, d: 47, name: "lamp", flip: true },
+    { x: 19, d: 49, name: "bush" },
+    { x: 24.5, d: 51, name: "flowerbed" },
+    { x: 18, d: 56, name: "bench" },
+    { x: 31, d: 57, name: "tree", back: true },
+  ],
+  [
+    { x: 5.5, d: 47, name: "lamp" },
+    { x: 14, d: 47, name: "lamp", flip: true },
+    { x: 18.5, d: 50, name: "flowerbed" },
+    { x: 22, d: 55, name: "trash" },
+    { x: 27, d: 56, name: "bench" },
+    { x: 30.5, d: 49, name: "bush" },
+  ],
+];
+
+/** Сквер над текстом: деревья глубже, лавочка и клумба ближе к дороге. */
+const SQUARES: TownProp[][] = [
+  [
+    { x: -22, d: 10, name: "tree", back: true },
+    { x: -29, d: 12, name: "pine", back: true },
+    { x: -15, d: 14, name: "bench", flip: true },
+    { x: -8.5, d: 12, name: "bush" },
+  ],
+  [
+    { x: -27, d: 9, name: "tree", back: true },
+    { x: -20, d: 13, name: "flowerbed" },
+    { x: -13, d: 15, name: "bench", flip: true },
+    { x: -7, d: 13, name: "lamp" },
+  ],
+  [
+    { x: -21, d: 11, name: "pine", back: true },
+    { x: -28, d: 13, name: "tree", back: true },
+    { x: -14, d: 14, name: "flowerbed" },
+    { x: -8, d: 12, name: "bush" },
+  ],
+];
+
+/**
+ * Квартал за следующим домом: ряд фоновых домов под текстом, вплотную —
+ * газоны смыкаются в один участок, как дома одной улицы. Крайний уходит за
+ * край городка: на широком экране квартал продолжается, на узком обрезается
+ * краем окна.
+ *
+ * Отдельные дома у дальних краёв пробовали: на 1280–1728 от них оставалась
+ * половинка у кромки окна и читалась как ошибка раскладки, а не как город.
+ */
+type BackdropCell = Cell & { flip?: boolean };
+const BACKDROP: BackdropCell[] = [
+  { x: -16, d: 58 },
+  { x: -26, d: 57, flip: true },
+  { x: -36, d: 58 },
+];
 
 /**
  * Улица по остановкам — таблица из docs/город.md, раздел 3.
  *
  * Ключи совпадают с id в route.ts. Остановки без записи (черновая развилка)
- * на маршрут не выходят.
+ * на маршрут не выходят. `props` — то, что у остановки своё, поверх двора и
+ * сквера; `yard`/`square` — номер варианта; `null` — зоны нет.
  */
 const TOWN: Record<string, TownStop> = {
-  // Арка на входе: два фонаря по бокам, клумбы у столбов, урна у дорожки
+  // Арка на входе: сквера над текстом нет — над ним только начало страницы
   hero: {
     house: { x: 22, d: 41 },
     drive: [
       { x: 10, d: 31 },
       { x: 17, d: 38 },
     ],
-    props: [
-      { ...F1, name: "lamp" },
-      { ...F3, name: "lamp", flip: true },
-      { ...F2, name: "flowerbed" },
-      { ...F4, name: "trash" },
-      { ...B2, name: "tree", back: true },
-      { ...T1, name: "bush", back: true },
-    ],
+    yard: 0,
+    square: null,
+    props: [{ x: 27, d: 8, name: "tree", back: true }],
   },
 
-  // Дом навыков: клумба у входа, лавочка лицом к дороге, дерево за домом
+  // Дом навыков
   skills: {
     house: { x: 22, d: 41 },
     drive: [
       { x: 10, d: 31 },
       { x: 17, d: 38 },
     ],
-    props: [
-      { ...F1, name: "flowerbed" },
-      { ...F3, name: "lamp" },
-      { ...C2, name: "bench", flip: true },
-      { ...B2, name: "tree", back: true },
-      { ...B1, name: "bush", back: true },
-      { ...T3, name: "flowerbed" },
-    ],
+    yard: 1,
+    square: 0,
+    props: [{ x: 4, d: 30, name: "bench", flip: true }],
   },
 
-  // Мини-игра: забор за верстаком, фонарь, куст, урна у стола
+  // Мини-игра: панель игры высокая, сквер над ней ниже обычного не спускается.
+  // Забор — за верстаком, это мастерская
   minigame: {
     house: { x: 22, d: 41 },
     drive: [
       { x: 10, d: 31 },
       { x: 17, d: 38 },
     ],
+    yard: 2,
+    square: null,
     props: [
       { x: 17, d: 13, name: "fence", back: true },
       { x: 26, d: 14, name: "fence", back: true },
-      { ...F1, name: "lamp" },
-      { ...F4, name: "trash" },
-      { ...F3, name: "bush" },
-      { ...C2, name: "bench", flip: true },
+      { x: -24, d: 8, name: "tree", back: true },
+      { x: -15, d: 9, name: "bush" },
     ],
   },
 
-  // Дом технологий: фонарь у двери, ель за домом
+  // Дом технологий: ель за домом
   tech: {
     house: { x: 22, d: 41 },
     drive: [
       { x: 10, d: 31 },
       { x: 17, d: 38 },
     ],
-    props: [
-      { ...F1, name: "lamp" },
-      { ...B2, name: "pine", back: true },
-      { ...F2, name: "flowerbed" },
-      { ...F3, name: "bush" },
-      { ...C2, name: "bench", flip: true },
-      { ...T2, name: "tree", back: true },
-    ],
+    yard: 0,
+    square: 1,
+    props: [{ x: 4, d: 30, name: "bench", flip: true }],
   },
 
-  // Дом кейсов: две клумбы галереей, лавочка напротив через дорогу
+  // Дом кейсов
   cases: {
     house: { x: 22, d: 41 },
     drive: [
       { x: 10, d: 31 },
       { x: 17, d: 38 },
     ],
-    props: [
-      { ...F1, name: "flowerbed" },
-      { ...F2, name: "flowerbed" },
-      { ...C2, name: "bench" },
-      { ...F3, name: "lamp" },
-      { ...B2, name: "tree", back: true },
-      { ...T3, name: "bush", back: true },
-    ],
+    yard: 1,
+    square: 2,
+    props: [],
   },
 
-  // Дом опыта: напротив сквер с шахматным столом (landmark-spots.ts),
-  // поэтому низ у стороны текста занят — декор уходит выше
+  // Дом опыта: под текстом сквер с шахматным столом (landmark-spots.ts) —
+  // квартал там снимается зоной отчуждения
   experience: {
     house: { x: 22, d: 41 },
     drive: [
       { x: 10, d: 31 },
       { x: 17, d: 38 },
     ],
-    props: [
-      { ...T2, name: "tree", back: true },
-      { ...T1, name: "bench" },
-      { ...F1, name: "lamp" },
-      { ...F2, name: "flowerbed" },
-      { ...B2, name: "tree", back: true },
-      { ...C1, name: "bush", back: true },
-    ],
+    yard: 2,
+    square: 0,
+    props: [{ x: 4, d: 30, name: "bench", flip: true }],
   },
 
-  // Дом «о себе»: жилой и спокойный — клумбы, лавочка, дерево, урна
+  // Дом «о себе»: под текстом волейбольная площадка (landmark-spots.ts)
   about: {
     house: { x: 22, d: 41 },
     drive: [
       { x: 10, d: 31 },
       { x: 17, d: 38 },
     ],
-    props: [
-      { ...F1, name: "flowerbed" },
-      { ...F2, name: "flowerbed" },
-      { ...F4, name: "trash" },
-      { ...C2, name: "bench", flip: true },
-      { ...B2, name: "tree", back: true },
-      { ...T3, name: "lamp" },
-    ],
+    yard: 0,
+    square: 1,
+    props: [],
   },
 
-  // Финиш: фонари парой, дальше пусто — за финишем ничего нет
+  // Финиш: за ним ничего нет — квартала под текстом тоже
   outro: {
     house: { x: 22, d: 41 },
     drive: [
       { x: 10, d: 31 },
       { x: 17, d: 38 },
     ],
-    props: [
-      { ...F1, name: "lamp" },
-      { ...F3, name: "lamp", flip: true },
-      { ...F2, name: "flowerbed" },
-      { ...C2, name: "bench", flip: true },
-      { ...B1, name: "bush", back: true },
-      { ...T2, name: "tree", back: true },
-    ],
+    yard: 1,
+    square: 2,
+    backdrop: false,
+    props: [],
   },
 };
 
 /**
  * Декор между остановками — единственное место, где объекты ставятся по
- * правилу, а не поимённо (docs/город.md, раздел 3): фонари вдоль полотна с
- * постоянным шагом и дерево на стыке остановок. Шаг переведён в глубину
- * остановки: 30 клеток — примерно 220px улицы при опорном окне.
+ * правилу, а не поимённо (docs/город.md, раздел 3): фонарь у обочины над
+ * домом и дерево на стыке остановок.
  */
 const ROADSIDE: TownProp[] = [
   { x: 5, d: 14, name: "lamp" },
-  { x: 5, d: 44, name: "lamp" },
   { x: -7, d: 56, name: "tree", back: true },
 ];
 
@@ -323,7 +364,11 @@ export function townNodes(stopIndex: number): TownNode[] {
   if (!stop || !map) return [];
 
   const dir = directionOf(stopIndex);
-  const hand = map.props;
+  const hand = [
+    ...(map.yard === null ? [] : YARDS[map.yard]),
+    ...(map.square === null ? [] : SQUARES[map.square]),
+    ...map.props,
+  ];
   const roadside = ROADSIDE.filter((item) => !hand.some((prop) => collides(prop, item)));
 
   const nodes: TownNode[] = [
@@ -364,6 +409,63 @@ export function townNodes(stopIndex: number): TownNode[] {
   });
 
   return nodes.sort((a, b) => a.depth - b.depth);
+}
+
+/** Фоновый дом квартала на экране. */
+export type BackdropNode = {
+  key: string;
+  left: number;
+  top: number;
+  flip: boolean;
+  /** Доля базовой ширины фонового дома */
+  scale: number;
+  opacity: number;
+  /** Сдвиг тона: у одного и того же ассета крыши и стены чуть разного цвета */
+  tone: string;
+};
+
+/**
+ * Сдвиг тона фоновых домов. Одна картинка на весь город, и без этого ряд
+ * читался бы копипастой. Сдвиги маленькие: дом должен остаться тем же
+ * материалом, что главные, а не перекраситься.
+ */
+const TONES = [
+  "saturate(0.8) hue-rotate(-8deg) brightness(1.03)",
+  "saturate(0.72) hue-rotate(6deg)",
+  "saturate(0.85) hue-rotate(-2deg) brightness(0.97)",
+  "saturate(0.7) hue-rotate(12deg) brightness(1.02)",
+];
+
+/**
+ * Кварталы за улицей для остановки (см. `BACKDROP`): зеркало чередуется,
+ * тон идёт по кругу со сдвигом от номера остановки, дальние дома мельче и
+ * бледнее. Зоны отчуждения площадок снимают дома, как и декор: иначе квартал
+ * встал бы на шахматный стол.
+ */
+export function townBackdrop(stopIndex: number): BackdropNode[] {
+  const stop = routeStops[stopIndex];
+  const map = stop ? TOWN[stop.id] : undefined;
+  if (!stop || !map || map.backdrop === false) return [];
+  const dir = directionOf(stopIndex);
+
+  return BACKDROP.flatMap((cell, index) => {
+    const left = cellLeft(cell.x * dir);
+    const top = depthTop(cell.d);
+    const routeTop = ((stopIndex + top / 100) / routeStops.length) * 100;
+    if (insideKeepOut(routeTop, left, { top: 4, left: 420 })) return [];
+    const flip = Boolean(cell.flip) !== (dir < 0);
+    return [
+      {
+        key: `${stop.id}-backdrop-${index}`,
+        left,
+        top,
+        flip,
+        scale: 0.92,
+        opacity: 0.56,
+        tone: TONES[(stopIndex * 3 + index) % TONES.length],
+      },
+    ];
+  });
 }
 
 /**

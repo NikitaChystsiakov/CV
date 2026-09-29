@@ -17,6 +17,8 @@
   /* Полотно дороги и её бордюр: цвет подложек, на которых стоят ассеты */
   --road: #cfc3a8;
   --road-edge: #b3a68a;
+  /* Тротуар вдоль дороги: камень светлее полотна, темнее фона */
+  --sidewalk: #e4dccb;
   --grid: rgb(20 24 32 / 0.06);
   --cloud: #ffffff;
   --cloud-shade: #e4ddcd;
@@ -95,6 +97,7 @@
   --path: #1e2c47;
   --road: #182034;
   --road-edge: #26304a;
+  --sidewalk: #121a2a;
   --grid: rgb(232 238 247 / 0.07);
   --cloud: #1d2b47;
   --cloud-shade: #16203a;
@@ -273,59 +276,61 @@
   }
 }
 
-/* Зацикленная партия в волейбол: мяч летает через сетку, игроки прыгают в фазе с ним.
-   Всё на transform, длительности синхронны (4.4s), иначе мяч и прыжки разъезжаются. */
+/* Партия в волейбол над кортом владельца: мяч летает между центрами половин
+   поля по дуге над сеткой (снято с ассета, см. VolleyBall в landmarks.tsx),
+   тень едет по земле. Всё на transform, длительности синхронны (4.4s).
+   Высота мяча над землёй: 24 у рук игрока, 78 над сеткой. */
 @keyframes volley-ball {
   0% {
-    transform: translate(-68px, 0);
+    transform: translate(0, -24px);
   }
-  12% {
-    transform: translate(-38px, -34px);
+  12.5% {
+    transform: translate(27px, -75px);
   }
   25% {
-    transform: translate(0, -46px);
+    transform: translate(54px, -104px);
   }
-  38% {
-    transform: translate(38px, -34px);
+  37.5% {
+    transform: translate(81px, -101px);
   }
   50% {
-    transform: translate(68px, 0);
+    transform: translate(108px, -76px);
   }
-  62% {
-    transform: translate(38px, -34px);
+  62.5% {
+    transform: translate(81px, -101px);
   }
   75% {
-    transform: translate(0, -46px);
+    transform: translate(54px, -104px);
   }
-  88% {
-    transform: translate(-38px, -34px);
+  87.5% {
+    transform: translate(27px, -75px);
   }
   100% {
-    transform: translate(-68px, 0);
+    transform: translate(0, -24px);
   }
 }
 
-/* Тень мяча: едет только по горизонтали и сжимается, когда мяч высоко.
-   Она заменила прыгающих игроков — без неё пустой корт не читается как игра. */
+/* Тень мяча: едет по земле между половинами поля и сжимается, когда мяч
+   высоко. Без неё пустой корт не читается как игра. */
 @keyframes volley-shadow {
   0% {
-    transform: translateX(-68px) scale(1);
+    transform: translate(0, 0) scale(1);
     opacity: 0.35;
   }
   25% {
-    transform: translateX(0) scale(0.62);
+    transform: translate(54px, -26px) scale(0.62);
     opacity: 0.2;
   }
   50% {
-    transform: translateX(68px) scale(1);
+    transform: translate(108px, -52px) scale(1);
     opacity: 0.35;
   }
   75% {
-    transform: translateX(0) scale(0.62);
+    transform: translate(54px, -26px) scale(0.62);
     opacity: 0.2;
   }
   100% {
-    transform: translateX(-68px) scale(1);
+    transform: translate(0, 0) scale(1);
     opacity: 0.35;
   }
 }
@@ -463,6 +468,7 @@
      того же пути. `non-scaling-stroke` обязателен: `<svg>` растянут по высоте
      маршрута и сжат по ширине до городка, и без него лента худела бы на
      диагоналях и толстела на прямых. */
+  .town-walk,
   .town-road,
   .town-kerb,
   .route-path,
@@ -475,6 +481,11 @@
 
   .town-kerb {
     stroke: var(--road-edge);
+  }
+
+  /* Тротуар вдоль полотна — камень, как цоколи домов */
+  .town-walk {
+    stroke: var(--sidewalk);
   }
 
   .town-road {
