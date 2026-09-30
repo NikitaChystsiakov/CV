@@ -7,6 +7,7 @@ import {
   useTransform,
   type MotionValue,
 } from "framer-motion";
+import Image from "next/image";
 import { createPortal } from "react-dom";
 import { useEffect, useId, useRef, type ReactElement, type ReactNode } from "react";
 
@@ -18,6 +19,7 @@ import {
 } from "@/components/room/use-room-layout";
 import { useScrollLock } from "@/components/room/use-scroll-lock";
 import { UI } from "@/lib/content";
+import type { RoomArt, Spot } from "@/lib/room-art";
 import { useLang } from "@/lib/use-lang";
 import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
 
@@ -78,11 +80,14 @@ export function HouseRoom({
   slots,
   onClose,
   camera,
+  art = null,
 }: {
   title: string;
   slots: RoomSlots;
   onClose: () => void;
   camera?: RoomCamera;
+  /** Интерьер картинкой (`room-art.ts`). `null` — комната на CSS 3D */
+  art?: RoomArt | null;
 }): ReactElement {
   const { lang } = useLang();
   const reducedMotion = usePrefersReducedMotion();
@@ -209,6 +214,44 @@ export function HouseRoom({
             <div aria-hidden className="room-flat__plinth" />
             <div aria-hidden className="room-flat__floor" />
           </motion.div>
+        ) : art ? (
+          // Интерьер картинкой: фон — арт владельца, контент — на размеченных
+          // точках. Взгляд за курсором тот же, но без плоскостей: картинка
+          // сама несёт перспективу
+          <motion.div
+            data-room-stage
+            data-room-art
+            className="room-art pointer-events-auto"
+            style={{
+              ...(camera ? { scale: camera.scale } : null),
+              rotateX,
+              rotateY,
+              ["--room-art-ratio" as string]: `${art.width} / ${art.height}`,
+            }}
+          >
+            <Image
+              src={art.src}
+              alt=""
+              fill
+              sizes="(max-width: 1280px) 100vw, 1180px"
+              className="scene-art select-none rounded-2xl object-cover"
+              priority
+            />
+            <div className="room-art__spot" style={spotStyle(art.spots.sign)}>
+              {sign}
+            </div>
+            {filled.map((name) => (
+              <div
+                key={name}
+                data-room-slot={name}
+                data-lenis-prevent
+                className={`room-art__spot ${name === "shelf" ? "room-shelf" : ""}`}
+                style={spotStyle(art.spots[name])}
+              >
+                {slots[name]}
+              </div>
+            ))}
+          </motion.div>
         ) : (
           <motion.div
             className="room-fit pointer-events-auto"
@@ -217,8 +260,17 @@ export function HouseRoom({
             <div data-room-stage className="room-scene">
               <motion.div className="room-box" style={{ rotateX, rotateY }}>
                 {/* Пол и боковая стена — архитектура: текста на них нет */}
-                <div className="room-plane room-plane--floor" aria-hidden />
+                {/* Свет — градиенты на токенах: окно с небом по теме, пятно
+                    света от него, тень в углах. Статично, на кадре не считается */}
+                <div className="room-plane room-plane--floor" aria-hidden>
+                  <div className="room-light room-light--floor" />
+                </div>
                 <div className="room-plane room-plane--side" aria-hidden>
+                  <div className="room-shade" />
+                  <div data-room-window className="room-window">
+                    <div className="room-window__glow" />
+                  </div>
+                  <div className="room-sill" />
                   <div className="room-plinth" />
                 </div>
                 {/* Срез по переднему краю: толщина перекрытия и стены */}
@@ -230,6 +282,8 @@ export function HouseRoom({
                   data-fill={filled.filter((name) => name !== "slate").join(" ") || "none"}
                   data-slate={slots.slate ? "" : undefined}
                 >
+                  <div className="room-shade" aria-hidden />
+                  <div className="room-light room-light--wall" aria-hidden />
                   <div className="room-wall">
                     {sign}
                     {slots.wall ? (
@@ -270,4 +324,14 @@ export function HouseRoom({
     </div>,
     document.body,
   );
+}
+
+/** Точка интерьера в процентах картинки. */
+function spotStyle(spot: Spot) {
+  return {
+    left: `${spot.x * 100}%`,
+    top: `${spot.y * 100}%`,
+    width: `${spot.w * 100}%`,
+    height: `${spot.h * 100}%`,
+  };
 }

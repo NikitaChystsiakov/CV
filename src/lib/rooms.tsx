@@ -45,7 +45,9 @@ import {
   type Profile,
   type Skill,
 } from "@/lib/profile";
-import { trophies } from "@/lib/trophies";
+import { BallArt } from "@/components/volleyball/ball";
+import { CHESS_ASSETS } from "@/lib/scene-assets";
+import { trophies, type LandmarkId } from "@/lib/trophies";
 
 export type RoomConfig = {
   /** Стена — главное высказывание дома */
@@ -115,6 +117,37 @@ function SlotLabel({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * Предмет на полке рядом с трофеем — из тех же ассетов, что площадка у дороги:
+ * шахматный король владельца и мяч (одобренный «мяч кодом»). У медали и
+ * диплома своих ассетов нет — у них только табличка, картинку не выдумываем.
+ */
+function TrophyObject({ landmark }: { landmark: LandmarkId }) {
+  if (landmark === "chess") {
+    const king = CHESS_ASSETS.king;
+    return (
+      <span aria-hidden className="room-trophy" data-room-trophy="chess">
+        <Image
+          src={king.src}
+          alt=""
+          width={king.width}
+          height={king.height}
+          unoptimized
+          // Размер явно, из пропорций ассета: у абсолютно поставленного
+          // предмета нет ширины, от которой считался бы `w-auto`
+          style={{ height: "2.75rem", width: `calc(2.75rem * ${(king.width / king.height).toFixed(3)})` }}
+          className="scene-art max-w-none select-none"
+        />
+      </span>
+    );
+  }
+  return (
+    <span aria-hidden className="room-trophy size-6" data-room-trophy="volleyball">
+      <BallArt />
+    </span>
+  );
+}
+
 /** Полка дома опыта: трофеи из общего источника, без дублирования текстов. */
 function trophyShelf(lang: Lang) {
   return (
@@ -125,6 +158,7 @@ function trophyShelf(lang: Lang) {
       <ul className="mt-3 space-y-3">
         {trophies.map((trophy) => (
           <li key={trophy.id}>
+            {trophy.landmark ? <TrophyObject landmark={trophy.landmark} /> : null}
             <p className="font-display text-sm font-bold tracking-tight">
               {dashes(pick(trophy.title, lang), lang)}
             </p>

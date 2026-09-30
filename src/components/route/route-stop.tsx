@@ -19,6 +19,7 @@ import {
 } from "@/components/route/scene-object";
 import { StopTown } from "@/components/route/scenery";
 import { UI } from "@/lib/content";
+import { roomArtFor } from "@/lib/room-art";
 import { ROOM_STOP_IDS, roomFor } from "@/lib/rooms";
 import { HOUSE_DOORS, STOP_ASSETS, type SceneAsset } from "@/lib/scene-assets";
 import { stopMarkLeft, townNodes, townSize } from "@/lib/town";
@@ -321,6 +322,7 @@ function HouseEntryScene({
           slots={room}
           onClose={entry.leave}
           camera={entry.room}
+          art={roomArtFor(stop.id)}
         />
       ) : null}
     </div>,

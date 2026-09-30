@@ -74,6 +74,12 @@
   --room-line: #cdbd9f;
   /* Завеса над маршрутом: комната модальная, город под ней должен уйти */
   --room-veil: rgb(20 24 32 / 0.58);
+  /* Свет в комнате (блок 4): небо в окне, пятно солнца от него и тень в
+     углах. Небо — те же тона, что облака и фон города днём */
+  --room-sky-top: #a9d3e3;
+  --room-sky-bottom: #e7f1ee;
+  --room-sunlight: rgb(255 236 196 / 0.55);
+  --room-shade: rgb(88 58 34 / 0.2);
   /* Завеса под командной палитрой (⌘K). Легче комнатной: палитра — короткая
      остановка на пару нажатий, город под ней должен отойти, но не пропасть */
   --palette-veil: rgb(20 24 32 / 0.3);
@@ -137,6 +143,11 @@
   --room-muted: #a9b8cc;
   --room-line: #3a4254;
   --room-veil: rgb(4 7 13 / 0.7);
+  --room-sky-top: #070b16;
+  --room-sky-bottom: #1b2a45;
+  /* Ночью из окна — холодный лунный свет, а не солнце */
+  --room-sunlight: rgb(150 180 230 / 0.16);
+  --room-shade: rgb(0 0 0 / 0.32);
   --palette-veil: rgb(4 7 13 / 0.56);
 
   --neon-1: #ff53c7;
@@ -1276,4 +1287,185 @@ body:has([data-cv-page]) :is(nav.fixed, [data-cursor-swarm]) {
   .demo-glare {
     background: radial-gradient(closest-side, color-mix(in oklab, var(--room-ink) 22%, transparent), transparent);
   }
+}
+
+/* --- Блок 4: свет в комнате ----------------------------------------------
+   Комната была заливками без света — рядом с мягким рендером домов она
+   читалась «из другой графики». Света добавлено ровно столько, сколько
+   делает объём: окно в боковой стене с небом по теме, пятно света от него на
+   полу и задней стене, мягкая тень в углах и у плинтуса, тень под досками
+   полки. Всё — градиенты на токенах: статично, на кадре не пересчитывается,
+   ночью меняется вместе с палитрой. Текста на этих слоях нет. */
+
+/* Окно в левой стене. Стена развёрнута к зрителю в ракурсе, поэтому окно —
+   просто прямоугольник в её плоскости: перспективу даёт сама стена */
+.room-window {
+  position: absolute;
+  left: 34%;
+  width: 36%;
+  top: 16%;
+  height: 40%;
+  border: calc(var(--room-t) * 0.55) solid var(--room-plank);
+  background: linear-gradient(var(--room-sky-top), var(--room-sky-bottom));
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--room-plank-top) 60%, transparent);
+  overflow: hidden;
+}
+
+/* Переплёт: крест тоном рамы */
+.room-window::before,
+.room-window::after {
+  content: "";
+  position: absolute;
+  background-color: var(--room-plank);
+}
+
+.room-window::before {
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: calc(var(--room-t) * 0.3);
+  transform: translateX(-50%);
+}
+
+.room-window::after {
+  top: 46%;
+  left: 0;
+  right: 0;
+  height: calc(var(--room-t) * 0.3);
+}
+
+/* Светило в окне — только свечение, без нарисованного диска (как в небе
+   города): днём тёплое, ночью лунное */
+.room-window__glow {
+  position: absolute;
+  right: 8%;
+  top: 10%;
+  width: 60%;
+  aspect-ratio: 1;
+  background: radial-gradient(closest-side, var(--room-sunlight), transparent);
+}
+
+/* Подоконник — доска, как полка */
+.room-sill {
+  position: absolute;
+  left: calc(34% - var(--room-t) * 0.4);
+  width: calc(36% + var(--room-t) * 0.8);
+  top: 56%;
+  height: calc(var(--room-t) * 0.7);
+  background: linear-gradient(var(--room-plank-top) 0 45%, var(--room-plank) 45% 100%);
+}
+
+/* Тень в углах задней стены и у потолка: комната темнеет к стыкам, так и
+   читается объём без линий */
+.room-shade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, var(--room-shade), transparent 14%),
+    linear-gradient(180deg, var(--room-shade), transparent 18%),
+    linear-gradient(0deg, color-mix(in oklab, var(--room-shade) 70%, transparent), transparent 12%);
+}
+
+/* Боковая стена темнее к переднему срезу — свет идёт из окна в глубине */
+.room-plane--side .room-shade {
+  background: linear-gradient(90deg, var(--room-shade), transparent 60%);
+}
+
+/* Пятно света из окна: на полу у левой стены и отсвет на задней стене */
+.room-light {
+  position: absolute;
+  pointer-events: none;
+  background: radial-gradient(closest-side, var(--room-sunlight), transparent);
+}
+
+.room-light--floor {
+  left: -6%;
+  top: 18%;
+  width: 62%;
+  height: 58%;
+}
+
+.room-light--wall {
+  left: -12%;
+  top: 10%;
+  width: 46%;
+  height: 80%;
+  opacity: 0.7;
+}
+
+/* Контактная тень пола у задней стены */
+.room-plane--floor::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 22%;
+  background: linear-gradient(var(--room-shade), transparent);
+}
+
+/* Тень под доской полки: доска висит на стене, а не нарисована на ней */
+.room-shelf ul > li::after {
+  box-shadow: 0 0.55rem 0.6rem -0.35rem var(--room-shade);
+}
+
+/* Предмет на полке — ассет владельца (фигура, мяч). Стоит на верхней грани
+   доски целиком за правой кромкой колонки: текст туда не заходит, поэтому
+   подпись он не задевает и колонку не сужает. Доска под таким трофеем
+   длиннее вправо, чтобы предмет стоял на ней, а не висел в воздухе */
+.room-trophy {
+  position: absolute;
+  left: calc(100% + 0.2rem);
+  bottom: calc(0.8rem * 0.62);
+  display: flex;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+/* Правой колонке предмет выходит за поле полки — поле шире, иначе
+   прокручиваемая плоскость его обрежет */
+.room-shelf:has(.room-trophy) {
+  padding-right: 2rem;
+}
+
+.room-shelf:has(.room-trophy) ul > li::after {
+  right: calc(-1 * max(var(--shelf-gap) / 2, 1.9rem));
+}
+
+/* Проём в соседнюю комнату глубже: темнее к своду, светлее у порога */
+.room-doorway {
+  background-image: linear-gradient(var(--room-shade), transparent 70%);
+}
+
+/* --- Интерьер картинкой (ROOM_ART) ---------------------------------------
+   Есть файл интерьера — он фон комнаты, а контент стоит на размеченных
+   точках (src/lib/room-art.ts). Картинка вписывается в кадр с воздухом по
+   краям, пропорции — из манифеста. */
+.room-art {
+  position: relative;
+  width: min(1180px, 100vw - 6rem, (100svh - 8rem) * var(--room-art-ratio));
+  aspect-ratio: var(--room-art-ratio);
+  color: var(--room-ink);
+  container: room-art / inline-size;
+}
+
+/* Точка интерьера. Под текстом — табличка тоном штукатурки: картинка
+   владельца может оказаться пёстрой, а контраст текста обязан держать AA сам
+   по себе, как на CSS-стене */
+.room-art__spot {
+  position: absolute;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background-color: color-mix(in oklab, var(--room-wall) 86%, transparent);
+}
+
+/* Полка в точке интерьера узкая — позиции идут одной колонкой */
+.room-art .room-shelf ul {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.room-art .room-sign {
+  font-size: clamp(1.5rem, 4.4cqi, 3rem);
 }

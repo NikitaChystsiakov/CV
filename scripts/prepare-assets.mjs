@@ -76,6 +76,14 @@ const ASSETS = {
   knigt: { width: 150, as: "knight" },
   pawn: { width: 150 },
 
+  // Интерьеры домов (блок 4): слот под арт владельца. Файла нет — строка
+  // ждёт: конвейер берёт только то, что лежит в assets-src. Появится
+  // `room-<id>.png` — комната дома перейдёт на картинку (src/lib/room-art.ts)
+  "room-experience": { width: 2400 },
+  "room-cases": { width: 2400 },
+  "room-tech": { width: 2400 },
+  "room-about": { width: 2400 },
+
   // Персонаж — не здесь: он приходит роликами, их режет `prepare-walk.mjs`
   // (`npm run walk`). Опорные картинки (character*.png) в сцену не идут
 };
