@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { unlock, XRAY_ACHIEVEMENT } from "@/lib/unlocked";
 
 /**
  * Открыт ли «Разбор сайта» — одно состояние на всю страницу, по образцу
@@ -58,6 +59,7 @@ export function openXray(from?: HTMLElement | null) {
   const active = document.activeElement;
   returnFocusTo = from ?? (active instanceof HTMLElement && active !== document.body ? active : null);
   open = true;
+  unlock(XRAY_ACHIEVEMENT);
   emit();
 }
 

@@ -6,6 +6,7 @@ import { useEffect, useRef } from "react";
 import { TownBackdrop } from "@/components/route/backdrop";
 import { Clouds } from "@/components/route/clouds";
 import { Constellations } from "@/components/route/constellations";
+import { DeepLinkArrival } from "@/components/route/deep-link";
 import { RouteStop } from "@/components/route/route-stop";
 import { SceneryLandmarks } from "@/components/route/scenery";
 import { Walker } from "@/components/route/walker";
@@ -49,6 +50,7 @@ export function RouteTrack() {
       <TownRoad progress={walked} />
       <MobileRoad progress={progress} />
       <Walker trackRef={trackRef} walked={walked} />
+      <DeepLinkArrival />
 
       <ol className="relative">
         {routeStops.map((stop, index) => (

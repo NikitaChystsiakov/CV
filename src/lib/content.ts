@@ -449,5 +449,24 @@ export const UI = {
   volleySaidWon: { ru: "Очко ваше. Серия {n} из 3", en: "Your point. Streak {n} of 3" },
   volleySaidLost: { ru: "Мяч упал. Серия сначала", en: "Ball down. Streak reset" },
   volleySaidStopped: { ru: "Игра остановлена", en: "Game stopped" },
+
+  // --- Блок 7: панель ачивок в верхней панели (components/achievements.tsx) ---
+  achTitle: { ru: "Находки", en: "Finds" },
+  achConstellations: { ru: "Созвездия", en: "Constellations" },
+  achConstellationsHint: {
+    ru: "Ночная тема, экран от 1280 px: над дорогой созвездия — нажмите на каждое.",
+    en: "Night theme on a 1280 px+ screen: constellations appear above the road. Click each one.",
+  },
+  achMinigame: { ru: "Собрать интерфейс", en: "Assemble the interface" },
+  achMinigameHint: { ru: "Мини-игра у верстака: перетащите блоки в макет.", en: "Mini-game at the workbench: drag the blocks into the layout." },
+  achMaster: { ru: "Все три раунда", en: "All three rounds" },
+  achMasterHint: { ru: "Сборка, адаптив и баги — пройдите мини-игру до конца.", en: "Layout, responsive and bugs: finish the mini-game." },
+  achXray: { ru: "Разбор сайта", en: "Site x-ray" },
+  achXrayHint: { ru: "Награда за три раунда мини-игры, дальше — из ⌘K.", en: "The reward for three mini-game rounds, then from ⌘K." },
+  achVolleyball: { ru: "Волейбол", en: "Volleyball" },
+  achVolleyballHint: {
+    ru: "Три розыгрыша подряд на площадке у дороги (экран от 1280 px).",
+    en: "Three rallies in a row on the court by the road (screens 1280 px and up).",
+  },
 } satisfies Record<string, Localized>;
 

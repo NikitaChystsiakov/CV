@@ -3,8 +3,9 @@
 import { motion, useMotionValueEvent, useScroll } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
+import { Achievements } from "@/components/achievements";
 import { CommandPaletteTrigger } from "@/components/command-palette";
 import { LanguageToggle } from "@/components/language-toggle";
 import { RouteMenu } from "@/components/route/route-menu";
@@ -53,6 +54,22 @@ export function Hud() {
   });
 
   const current = routeStops[stopIndex];
+
+  // Адрес следует за маршрутом: ссылку «/#skills» можно отправить прямо на
+  // дом (приезд по ней — deep-link.tsx). replaceState, а не новая запись в
+  // истории: кнопка «назад» не должна листать остановки. Первый проход
+  // пропускаем — на загрузке адрес задаёт посетитель, а не панель
+  const settled = useRef(false);
+  useEffect(() => {
+    if (onCv) return;
+    if (!settled.current) {
+      settled.current = true;
+      return;
+    }
+    const hash = stopIndex === 0 ? "" : `#${current.id}`;
+    if (window.location.hash === hash) return;
+    window.history.replaceState(window.history.state, "", `${window.location.pathname}${window.location.search}${hash}`);
+  }, [current.id, onCv, stopIndex]);
 
   return (
     <header data-hud className="pointer-events-none fixed inset-x-0 top-0 z-50 print:hidden">
@@ -139,6 +156,13 @@ export function Hud() {
           <span className="hidden md:contents">
             <CommandPaletteTrigger />
           </span>
+
+          {/* Находки — от md, как палитра: на телефоне панель уже полна */}
+          {!onCv && (
+            <span className="hidden md:contents">
+              <Achievements className={PILL} />
+            </span>
+          )}
 
           <LanguageToggle />
           <ThemeToggle />

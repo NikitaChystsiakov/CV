@@ -6,11 +6,16 @@
  * Хранение в `sessionStorage` — решение из концепта (раздел 8): прогресс не
  * теряется при переходах по маршруту, но второй визит начинается заново.
  *
- * Пока сюда пишут только созвездия. Полная система ачивок делается на этапе Э10
- * и должна читать этот же ключ, а не заводить своё хранилище.
+ * Пишут сюда созвездия, мини-игра, волейбол и «Разбор сайта». Панель ачивок в
+ * верхней панели (`achievements.tsx`) читает этот же ключ через `useUnlocked`:
+ * открытие шлёт событие, и счётчик обновляется сразу, без перезагрузки.
  */
 
+import { useSyncExternalStore } from "react";
+
 const KEY = "cv-unlocked";
+/** Событие «что-то открыли» — на нём живёт `useUnlocked` */
+const EVENT = "cv-unlocked";
 
 function read(): string[] {
   try {
@@ -37,7 +42,35 @@ export function unlock(id: string) {
     return true;
   }
 
+  window.dispatchEvent(new Event(EVENT));
   return true;
+}
+
+function subscribe(onChange: () => void) {
+  window.addEventListener(EVENT, onChange);
+  return () => window.removeEventListener(EVENT, onChange);
+}
+
+/** Сырая строка хранилища: снимок для useSyncExternalStore обязан быть стабильным. */
+function snapshot() {
+  try {
+    return sessionStorage.getItem(KEY) ?? "[]";
+  } catch {
+    return "[]";
+  }
+}
+
+/**
+ * Список открытого за сессию — реактивно. На сервере пусто: разметка сервера
+ * и клиента совпадает, а счётчик доезжает на клиенте.
+ */
+export function useUnlocked(): string[] {
+  const raw = useSyncExternalStore(subscribe, snapshot, () => "[]");
+  try {
+    return JSON.parse(raw) as string[];
+  } catch {
+    return [];
+  }
 }
 
 /**
@@ -61,6 +94,9 @@ export const MINIGAME_MASTER = "minigame:master";
  * trophies.ts. Повторная победа ачивку не дублирует — это решает `unlock()`.
  */
 export const VOLLEYBALL_ACHIEVEMENT = "volleyball:three-in-a-row";
+
+/** «Разбор сайта» открыт хотя бы раз — из мини-игры или из ⌘K. */
+export const XRAY_ACHIEVEMENT = "xray:opened";
 
 export function unlockedCount() {
   return read().length;
