@@ -91,8 +91,15 @@ const MAX_FRAME_MS = 100;
 
 /** Столько миллисекунд без движения — и он встаёт в позу стойки. */
 const IDLE_AFTER = 140;
-/** Меньше этого сдвига за кадр (px экрана) считается покоем: хвост пружины не должен дёргать ноги. */
-const MOVE_EPSILON = 0.35;
+/**
+ * Медленнее этого (px экрана в секунду) — покой: хвост пружины не должен
+ * дёргать ноги. Порог по скорости, а не «пикселей за кадр»: при 20 кадрах в
+ * секунду шаг за кадр втрое крупнее, и прежний порог держал персонажа на ходу
+ * лишнюю секунду после остановки.
+ */
+const MOVE_SPEED = 21;
+/** Первый кадр после паузы: времени ещё не намерено — тогда порог за кадр при 60 к/с. */
+const MOVE_EPSILON = MOVE_SPEED / 60;
 
 export function Walker({
   trackRef,
@@ -169,9 +176,10 @@ export function Walker({
     const now = performance.now();
     const dt = lastTime.current === null ? 0 : Math.min(now - lastTime.current, MAX_FRAME_MS);
     lastTime.current = now;
+    const moving = dt > 0 ? (Math.abs(step) * 1000) / dt > MOVE_SPEED : Math.abs(step) > MOVE_EPSILON;
 
     // Разворот с гистерезисом: против хода надо пройти заметный кусок
-    if (!reduced && Math.abs(step) > MOVE_EPSILON) {
+    if (!reduced && moving) {
       if (Math.sign(step) === heading.current) {
         against.current = 0;
       } else {
@@ -200,7 +208,7 @@ export function Walker({
       return;
     }
 
-    if (Math.abs(step) > MOVE_EPSILON) {
+    if (moving) {
       const stride = WALK[pose].stride * STRIDE_FIT * K * geo.unit;
       // Фаза идёт вперёд, куда бы он ни шёл: назад он идёт лицом по ходу.
       // Шаг против хода (до разворота) крутит кадры обратно — это доля секунды
