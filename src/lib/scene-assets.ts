@@ -53,6 +53,8 @@ export const STOP_ASSETS: Record<string, SceneAsset> = {
  * точку надо переснять, иначе камера будет входить в стену.
  */
 export const HOUSE_DOORS: Record<string, { x: number; y: number }> = {
+  // Дом навыков: дверь на левом фасаде, под вывеской с плиткой
+  skills: { x: 0.32, y: 0.67 },
   tech: { x: 0.31, y: 0.68 },
   cases: { x: 0.62, y: 0.62 },
   experience: { x: 0.67, y: 0.63 },

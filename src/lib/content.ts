@@ -275,5 +275,76 @@ export const UI = {
   xrayMapNote: { ru: "Скорпион, остановки на звёздах", en: "Scorpius, stops on its stars" },
   xrayHud: { ru: "Панель", en: "HUD" },
   xrayHudNote: { ru: "прогресс пишется в DOM через ref", en: "progress written to the DOM via ref" },
+
+  // --- Блок 3: дом навыков и дом кейсов (src/components/skills, cases) -------
+  // Панель дома-галереи: закрытие — выход из дома, а не «закрыть окно»
+  housePanelClose: { ru: "Выйти из дома", en: "Leave the house" },
+
+  // Дом навыков. Текста мало: одна строка-подводка, остальное под кликом
+  skillsLead: {
+    ru: "Каждая плитка — работающий приём, а не картинка. Потрогайте: мышью, пальцем или с клавиатуры.",
+    en: "Every tile is a working technique, not a picture. Touch it: mouse, finger or keyboard.",
+  },
+  skillsReduced: {
+    ru: "В системе включено «меньше движения» — демо стоят в конечном состоянии.",
+    en: "Your system asks for reduced motion, so the demos hold their final state.",
+  },
+  skillsHow: { ru: "Как сделано", en: "How it's made" },
+  skillsHowOf: { ru: "Как сделано: {demo}", en: "How it's made: {demo}" },
+  skillsHowClose: { ru: "Закрыть", en: "Close" },
+  skillsCode: { ru: "Фрагмент кода", en: "Code excerpt" },
+  skillsStack: { ru: "Стек", en: "Stack" },
+  skillsLoading: { ru: "Загружаю демо", en: "Loading the demos" },
+
+  // Подписи внутри демо: всё, что видит или слышит посетитель
+  demoPuck: {
+    ru: "Шайба: перетащите или двигайте стрелками, Home — в центр",
+    en: "Puck: drag it or move it with the arrow keys, Home to center",
+  },
+  demoTabs: { ru: "Период", en: "Period" },
+  demoTabDay: { ru: "День", en: "Day" },
+  demoTabWeek: { ru: "Неделя", en: "Week" },
+  demoTabMonth: { ru: "Месяц", en: "Month" },
+  demoTabDayNote: { ru: "Короткий цикл: правка — ревью — релиз.", en: "A short loop: change, review, release." },
+  demoTabWeekNote: { ru: "Спринт: фича от макета до продакшна.", en: "A sprint: a feature from mockup to production." },
+  demoTabMonthNote: { ru: "Большой релиз с замером до и после.", en: "A big release, measured before and after." },
+  demoScrollList: { ru: "Список с анимацией от скролла", en: "A list with scroll-linked motion" },
+  demoMorph: { ru: "Иконка меню", en: "Menu icon" },
+  demoMorphMenu: { ru: "меню", en: "menu" },
+  demoMorphClose: { ru: "закрыть", en: "close" },
+  demoChars: { ru: "Интерфейс, который отвечает руке", en: "An interface that answers the hand" },
+  demoReplay: { ru: "Ещё раз", en: "Replay" },
+  demoTilt: {
+    ru: "Карточка с наклоном: наведите указатель или жмите стрелки",
+    en: "Tilting card: hover it or press the arrow keys",
+  },
+  demoTiltFace: { ru: "Наклони меня", en: "Tilt me" },
+  demoMagnet: { ru: "Притянуть", en: "Pull me" },
+  demoMagnetLabel: {
+    ru: "Магнитная кнопка: подведите указатель или жмите стрелки",
+    en: "Magnetic button: bring the pointer close or press the arrow keys",
+  },
+  demoCounter: { ru: "Счётчик", en: "Counter" },
+  demoCounterDown: { ru: "Уменьшить на один", en: "Decrease by one" },
+  demoCounterUp: { ru: "Увеличить на один", en: "Increase by one" },
+
+  // Дом кейсов: экспозиция, кейс — картина на стене
+  caseOf: { ru: "Кейс {n} из {total}", en: "Case {n} of {total}" },
+  casePrev: { ru: "Предыдущий кейс", en: "Previous case" },
+  caseNext: { ru: "Следующий кейс", en: "Next case" },
+  caseLink: { ru: "Открыть проект", en: "Open the project" },
+  caseShotOpen: { ru: "Открыть скриншот крупно: {alt}", en: "Open the screenshot large: {alt}" },
+  caseShotOf: { ru: "Скриншот {n} из {total}", en: "Screenshot {n} of {total}" },
+  caseShotPrev: { ru: "Предыдущий скриншот", en: "Previous screenshot" },
+  caseShotNext: { ru: "Следующий скриншот", en: "Next screenshot" },
+  caseShotClose: { ru: "Закрыть скриншот", en: "Close the screenshot" },
+  caseList: { ru: "Все кейсы", en: "All cases" },
+
+  // Dev-превью (/dev/*): в проде этих страниц нет, но строки — те же пары
+  devFixture: {
+    ru: "Превью на фикстурах: данные ненастоящие, в прод не уезжают",
+    en: "Fixture preview: the data is fake and never ships",
+  },
+  devReopen: { ru: "Открыть снова", en: "Open again" },
 } satisfies Record<string, Localized>;
 
