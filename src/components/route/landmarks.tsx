@@ -1,7 +1,3 @@
-import Image from "next/image";
-
-import { LANDMARK_ASSETS } from "@/lib/scene-assets";
-
 /**
  * Детали-площадки: то, что кликается у дороги и рассказывает про владельца.
  *
@@ -61,43 +57,3 @@ export function VolleyBall() {
   );
 }
 
-/**
- * Волейбольная площадка у дороги: корт — ассет владельца, мяч с тенью поверх —
- * кодом (`VolleyBall`). Живёт в масштабе городка через обёртку `.town-scale`
- * (scenery.tsx), поэтому размеры внутри — в базовых пикселях.
- *
- * Середина сетки снята с файла корта (640×406): сетка идёт от (212, 20) к
- * (462, 152), её середина — (0,52; 0,23) долей картинки. Мяч летает над ней.
- */
-const COURT = LANDMARK_ASSETS.volleyballCourt;
-const NET_CENTER = { x: 0.52, y: 0.23 };
-
-export function VolleyballCourt() {
-  const height = (COURT.display * COURT.height) / COURT.width;
-  return (
-    <div data-volleyball-court className="relative" style={{ width: COURT.display, height }}>
-      <div
-        aria-hidden
-        className="absolute inset-x-[6%] bottom-[2%] -z-10 h-[30%]"
-        style={{
-          background:
-            "radial-gradient(closest-side, color-mix(in oklab, var(--color-shadow) 40%, transparent), transparent)",
-        }}
-      />
-      <Image
-        src={COURT.src}
-        alt=""
-        width={COURT.width}
-        height={COURT.height}
-        sizes={`${COURT.display}px`}
-        className="scene-art h-auto w-full select-none"
-      />
-      <div
-        className="absolute -translate-x-1/2 -translate-y-1/2"
-        style={{ left: `${NET_CENTER.x * 100}%`, top: `${NET_CENTER.y * 100}%` }}
-      >
-        <VolleyBall />
-      </div>
-    </div>
-  );
-}

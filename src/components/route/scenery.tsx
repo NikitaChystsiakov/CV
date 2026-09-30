@@ -4,7 +4,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { type ComponentType, useEffect, useRef, useState } from "react";
 
 import { ChessScene } from "@/components/route/chess-scene";
-import { VolleyballCourt } from "@/components/route/landmarks";
 import { SceneObject } from "@/components/route/scene-object";
 import { SceneProp } from "@/components/route/scene-prop";
 import { UI } from "@/lib/content";
@@ -15,6 +14,7 @@ import type { RouteStopConfig } from "@/lib/route";
 import { STOP_ASSETS } from "@/lib/scene-assets";
 import { townNodes, townSize, type TownNode } from "@/lib/town";
 import { trophyByLandmark } from "@/lib/trophies";
+import { VolleyballLandmark } from "@/components/volleyball";
 
 /**
  * Городок вокруг одной остановки.
@@ -112,29 +112,50 @@ function anchor(node: TownNode) {
 export function SceneryLandmarks() {
   return (
     <>
-      {LANDMARKS.map((landmark) => (
-        <SceneryStory
-          key={landmark.kind}
-          kind={landmark.kind}
-          top={stopTop(landmark.stopId, landmark.offset)}
-          left={landmark.left}
-        />
-      ))}
+      {LANDMARKS.map((landmark) => {
+        const top = stopTop(landmark.stopId, landmark.offset);
+        // Волейбол — не подпись по клику, а мини-игра: компонент сам несёт
+        // кнопку, счёт и всплывашку трофея (components/volleyball). Здесь —
+        // только место на маршруте, слой z-30 и ширина от 1280, как у всех площадок
+        if (landmark.kind === "volleyball") {
+          return (
+            <div
+              key={landmark.kind}
+              className="absolute z-30 hidden xl:block"
+              style={{
+                top: `${top}%`,
+                left: `calc(50% + ${townSize(landmark.left)})`,
+                transform: "translate(-50%, -50%)",
+              }}
+            >
+              <VolleyballLandmark />
+            </div>
+          );
+        }
+        return <SceneryStory key={landmark.kind} kind={landmark.kind} top={top} left={landmark.left} />;
+      })}
     </>
   );
 }
 
-/** Какой компонент рисует площадку. */
-const LANDMARK_SCENES: Record<LandmarkKind, ComponentType> = {
+/** Какой компонент рисует площадку-подпись. Волейбол живёт отдельно — см. выше. */
+const LANDMARK_SCENES: Record<Exclude<LandmarkKind, "volleyball">, ComponentType> = {
   chess: ChessScene,
-  volleyball: VolleyballCourt,
 };
 
 /**
  * Кликабельные детали про владельца сайта: площадка стоит у дороги как декор,
  * но по клику показывает тот же текст, что и полка в доме опыта.
  */
-function SceneryStory({ kind, top, left }: { kind: LandmarkKind; top: number; left: number }) {
+function SceneryStory({
+  kind,
+  top,
+  left,
+}: {
+  kind: Exclude<LandmarkKind, "volleyball">;
+  top: number;
+  left: number;
+}) {
   const { lang } = useLang();
   const [open, setOpen] = useState(false);
   const holder = useRef<HTMLDivElement>(null);
