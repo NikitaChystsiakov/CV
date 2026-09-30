@@ -346,5 +346,26 @@ export const UI = {
     en: "Fixture preview: the data is fake and never ships",
   },
   devReopen: { ru: "Открыть снова", en: "Open again" },
+
+  // --- Б6. Волейбол: мини-игра «Держи мяч» на площадке у дороги ---------------
+  // На экране — только слово на кнопке, подсказка на время игры и строка
+  // ачивки во всплывашке; остальное — подписи для экранного диктора
+  volleyPlay: { ru: "Сыграть", en: "Play" },
+  volleyPlayLabel: {
+    ru: "Волейбол: сыграть. Выиграй три розыгрыша подряд",
+    en: "Volleyball: play. Win three rallies in a row",
+  },
+  volleyHit: { ru: "Бей", en: "Hit" },
+  volleyHitLabel: {
+    ru: "Отбить мяч: клик, пробел или Enter. Escape — стоп",
+    en: "Hit the ball: click, Space or Enter. Escape stops",
+  },
+  volleyHint: { ru: "бей, когда мяч у кольца", en: "hit as the ball meets the ring" },
+  volleyTrophy: { ru: "Трофей", en: "Trophy" },
+  volleyAchievement: { ru: "Три розыгрыша подряд", en: "Three rallies in a row" },
+  volleySaidStart: { ru: "Подача соперника", en: "Opponent serves" },
+  volleySaidWon: { ru: "Очко ваше. Серия {n} из 3", en: "Your point. Streak {n} of 3" },
+  volleySaidLost: { ru: "Мяч упал. Серия сначала", en: "Ball down. Streak reset" },
+  volleySaidStopped: { ru: "Игра остановлена", en: "Game stopped" },
 } satisfies Record<string, Localized>;
 
