@@ -273,7 +273,7 @@ export const UI = {
   xrayHow: { ru: "Как сделан сам разбор", en: "How this x-ray works" },
   xrayHowText: {
     ru: "Это не скриншот: в момент открытия видимые элементы каждого слоя копируются и встают на свои места. Живую страницу в 3D не разложить — preserve-3d сплющивается от opacity, overflow и filter у любого предка. У каждой пластины своя матрица с perspective() без общего 3D-контекста: так кадр дешевле. Поворот пишется в transform через ref, React на кадре не участвует.",
-    en: "This isn't a screenshot: on open, the visible elements of every layer are cloned into place. The live page can't be exploded in 3D — preserve-3d flattens under opacity, overflow or filter on any ancestor. Each plate gets its own matrix with perspective() instead of a shared 3D context, which keeps frames cheap. Rotation is written to transform via a ref; React stays out of the frame loop.",
+    en: "This isn't a screenshot: on open, the visible elements of every layer are cloned into place. The live page can't be exploded in 3D: preserve-3d flattens under opacity, overflow or filter on any ancestor. Each plate gets its own matrix with perspective() instead of a shared 3D context, which keeps frames cheap. Rotation is written to transform via a ref; React stays out of the frame loop.",
   },
 
   xrayGround: { ru: "Земля", en: "Ground" },

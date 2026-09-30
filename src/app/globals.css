@@ -34,7 +34,7 @@
      в тёмной теме тени получались светлее фона и читались как лужи */
   --shadow: #a1957f;
   /* Задник-кварталы: насколько фоновые дома растворены в фоне страницы */
-  --backdrop-opacity: 0.5;
+  --backdrop-opacity: 0.42;
   /* Земля: газоны, грунт, вода */
   --grass: #93bb8e;
   --grass-2: #7aa877;
@@ -115,7 +115,7 @@
   --ball: #e9eef7;
   --ball-line: #8d99ab;
   --shadow: #04070d;
-  --backdrop-opacity: 0.42;
+  --backdrop-opacity: 0.36;
   --grass: #1f4a3a;
   --grass-2: #183b2e;
   --soil: #1a2033;
@@ -147,7 +147,7 @@
   --room-sky-bottom: #1b2a45;
   /* Ночью из окна — холодный лунный свет, а не солнце */
   --room-sunlight: rgb(150 180 230 / 0.16);
-  --room-shade: rgb(0 0 0 / 0.32);
+  --room-shade: color-mix(in oklab, var(--shadow) 34%, transparent);
   --palette-veil: rgb(4 7 13 / 0.56);
 
   --neon-1: #ff53c7;
@@ -520,7 +520,7 @@
      Прозрачность смешивает дом с фоном страницы — это и есть дымка, без
      отдельного слоя тумана. Тон у соседних домов разный, но он запечён в
      файлы конвейером, а не фильтром: фильтр на десятках картинок дорог. */
-  .backdrop-house {
+  .backdrop-layer {
     opacity: var(--backdrop-opacity);
   }
 

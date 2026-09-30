@@ -393,6 +393,13 @@ function XrayScene() {
     return () => clearLayers(hosts, gridHost);
   }, [size]);
 
+  // Статичный режим (reduced-motion, список) — слои разложены сразу, с первого
+  // кадра, а не когда декодируются копии: под сниженным движением стопке
+  // «доезжать» некуда, и замер сразу после открытия видел её сложенной
+  useLayoutEffect(() => {
+    if (!wide || reduced) progress.set(1);
+  }, [progress, reduced, wide]);
+
   // Смена режима и размера окна: пересчитать позу. Не на кадр — на resize
   useEffect(() => {
     if (!wide) return;
@@ -532,8 +539,10 @@ function XrayScene() {
 
   // Показ по шагам: снизу вверх, как собирается страница. Первый шаг ставит
   // кнопка, дальше — таймер
+  // Только в объёмном режиме: в списке (планшет повернули) нет кнопки
+  // остановить показ, а интервал раскрывал бы пункты под пальцем
   useEffect(() => {
-    if (!touring) return;
+    if (!touring || !wide) return;
     let step = 1;
     const timer = window.setInterval(() => {
       if (step >= XRAY_LAYERS.length) {
@@ -545,7 +554,7 @@ function XrayScene() {
       step += 1;
     }, TOUR_STEP);
     return () => window.clearInterval(timer);
-  }, [touring]);
+  }, [touring, wide]);
 
   // Выбранный слой — в видимой части списка (на планшете список прокручивается)
   useEffect(() => {

@@ -61,7 +61,9 @@ export async function run({ browser, report, BASE, OUT, routeStopIds }) {
   await page.waitForTimeout(600);
   const trigger = page.locator("[data-achievements-trigger]");
   report(S, "в верхней панели есть счётчик находок", (await trigger.count()) === 1 && (await trigger.isVisible()));
-  const before = await page.locator("[data-achievements-count]").textContent();
+  // Счётчик без цифр на экране (кольцо): число — в атрибуте и в aria-label
+  const count = () => page.locator("[data-achievements-count]").getAttribute("data-achievements-count");
+  const before = await count();
   await trigger.click();
   await page.waitForTimeout(300);
   const panel = await page.evaluate(() => ({
@@ -78,7 +80,7 @@ export async function run({ browser, report, BASE, OUT, routeStopIds }) {
     window.dispatchEvent(new Event("cv-unlocked"));
   });
   await page.waitForTimeout(200);
-  const after = await page.locator("[data-achievements-count]").textContent();
+  const after = await count();
   const doneVolley = await page.locator('[data-achievement="volleyball"][data-done]').count();
   report(S, "счётчик реагирует на открытие без перезагрузки", before !== after && doneVolley === 1, `${before} → ${after}`);
 

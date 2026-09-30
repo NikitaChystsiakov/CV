@@ -94,6 +94,11 @@ export function MagnetDemo() {
         center.current = measure();
       }}
       onPointerMove={onPointerMove}
+      // Лист панели прокрутили колесом, пока указатель над плиткой, — центр
+      // кнопки уехал вместе с листом, замер устарел
+      onWheel={() => {
+        center.current = null;
+      }}
       onPointerLeave={onPointerLeave}
       className="absolute inset-0 grid place-items-center"
     >

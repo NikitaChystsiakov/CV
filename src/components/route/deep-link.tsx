@@ -25,7 +25,9 @@ export function DeepLinkArrival() {
 
   useEffect(() => {
     if (done.current) return;
-    const id = decodeURIComponent(window.location.hash.slice(1));
+    // Сырой хэш, без decodeURIComponent: id остановок — латиница, а битая
+    // escape-последовательность в чужой ссылке (`/#%`) уронила бы страницу
+    const id = window.location.hash.slice(1);
     const stop = id ? routeStops.find((item) => item.id === id) : undefined;
     const target = stop ? document.getElementById(stop.id) : null;
     // Lenis нет при reduced-motion (нативный скролл) — тогда доводит окно само

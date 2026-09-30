@@ -61,7 +61,13 @@ export function Hud() {
   // пропускаем — на загрузке адрес задаёт посетитель, а не панель
   const settled = useRef(false);
   useEffect(() => {
-    if (onCv) return;
+    // На /cv индекс считается от прокрутки резюме — он чужой. Возвращаясь в
+    // город, первый проход снова пропускаем: иначе адрес получил бы остановку
+    // по прокрутке резюме, и приезд по ссылке увёз бы туда
+    if (onCv) {
+      settled.current = false;
+      return;
+    }
     if (!settled.current) {
       settled.current = true;
       return;
@@ -160,7 +166,7 @@ export function Hud() {
           {/* Находки — от md, как палитра: на телефоне панель уже полна */}
           {!onCv && (
             <span className="hidden md:contents">
-              <Achievements className={PILL} />
+              <Achievements className={PILL_ROUND} />
             </span>
           )}
 

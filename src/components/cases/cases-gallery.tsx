@@ -52,9 +52,19 @@ export function CasesGallery({ cases }: { cases: CaseStudy[] }) {
   const total = cases.length;
   const current = cases[Math.min(index, total - 1)];
 
+  const galleryRef = useRef<HTMLDivElement>(null);
+
   const go = useCallback(
     (step: number) => {
       if (total < 2) return;
+      // Фокус внутри уходящего кейса (картина, ссылка) пропал бы вместе с ним
+      // и упал на body — клавиатура потеряла бы место. Переводим его на
+      // экспозицию: она остаётся, и следующий Tab идёт по новому кейсу
+      const gallery = galleryRef.current;
+      const active = document.activeElement;
+      if (gallery && active && gallery.querySelector("[data-case]")?.contains(active)) {
+        gallery.focus({ preventScroll: true });
+      }
       setDirection(step);
       setIndex((value) => (value + step + total) % total);
     },
@@ -105,7 +115,7 @@ export function CasesGallery({ cases }: { cases: CaseStudy[] }) {
   const [cover, ...rest] = current.shots;
 
   return (
-    <div data-case-gallery className="mt-6">
+    <div ref={galleryRef} data-case-gallery tabIndex={-1} className="mt-6 outline-none">
       <div className="flex items-center justify-between gap-4">
         <p aria-live="polite" className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted">
           {fill(say(UI.caseOf), { n: index + 1, total })}

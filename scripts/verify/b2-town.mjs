@@ -84,7 +84,13 @@ export async function run({ browser, openPage, report, OUT }) {
           .map((el) => ({ el, r: el.getBoundingClientRect() }))
           .filter(({ r }) => r.width > 1 && r.bottom > 0 && r.top < innerHeight);
         for (const b of backs) {
-          maxOpacity = Math.max(maxOpacity, parseFloat(getComputedStyle(b.el.closest("[data-backdrop]")).opacity));
+          // Итоговая прозрачность — произведение по предкам: она может стоять
+          // и на самом доме, и на слое задника
+          let effective = 1;
+          for (let node = b.el; node && node !== document.body; node = node.parentElement) {
+            effective *= parseFloat(getComputedStyle(node).opacity);
+          }
+          maxOpacity = Math.max(maxOpacity, +effective.toFixed(3));
           for (const h of houses) {
             maxShare = Math.max(maxShare, b.r.width / h.r.width);
             const left = Math.max(b.r.left, h.r.left, 0);

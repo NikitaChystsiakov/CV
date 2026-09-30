@@ -86,6 +86,12 @@ export function TiltDemo() {
           box.current = event.currentTarget.getBoundingClientRect();
         }}
         onPointerMove={onPointerMove}
+        // Лист панели прокрутили колесом, пока указатель над карточкой, —
+        // замер устарел. Мерить на каждом движении нельзя: карточка сама
+        // повёрнута, и её прямоугольник меняется от наклона
+        onWheel={() => {
+          box.current = null;
+        }}
         onPointerLeave={() => {
           box.current = null;
           rest();

@@ -135,7 +135,18 @@ export function Walker({
   const idleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const { scrollY } = useScroll();
-  const smooth = useSpring(scrollY, { stiffness: 140, damping: 26, mass: 0.5 });
+  // Первое изменение — прыжком (`skipInitialAnimation`): при заходе по ссылке
+  // на остановку или после перезагрузки посреди маршрута персонаж не пролетает
+  // всю дорогу от арки. Демпфирование почти критическое (ζ ≈ 1,08): шаг
+  // отстаёт от скролла, но без перелёта, а хвост после рывка на весь маршрут
+  // гаснет за ~0,8 с — при ζ ≈ 1,55 он тянулся полторы секунды, и персонаж
+  // долго «доползал» до места вместо того, чтобы встать
+  const smooth = useSpring(scrollY, {
+    stiffness: 140,
+    damping: 18,
+    mass: 0.5,
+    skipInitialAnimation: true,
+  });
 
   /** Показать кадр `frame` полосы позы `pose` (N — стойка). */
   const showFrame = (pose: Pose, frame: number) => {

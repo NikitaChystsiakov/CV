@@ -5,9 +5,10 @@
  * Порядок домов — открытый вопрос концепта (п.12), меняется правкой этого массива:
  * весь маршрут строится из него, руками в разметке ничего дублировать не нужно.
  *
- * Тексты лежат парой `{ ru, en }`. Английский здесь — перевод служебных
- * плейсхолдеров, а не контент резюме: настоящие тексты обеих версий ждём от
- * владельца (`docs/нужны-ассеты.md`).
+ * Тексты лежат парой `{ ru, en }`. `summary` — одна строка для читателя под
+ * заголовком дома: что внутри, без фактов о владельце (факты — в profile.ts).
+ * Служебные заметки разработчика здесь были и уезжали посетителю — не
+ * возвращать. Черновик развилки не рендерится, его заметка осталась как есть.
  */
 
 import type { Localized } from "@/lib/i18n";
@@ -53,8 +54,8 @@ export const routeStopsAll: RouteStopConfig[] = [
       en: "Start of the route",
     },
     summary: {
-      ru: "Hero-приглашение: имя, роль, зов к скроллу. Впереди по пути видны первые дома — не весь город сразу.",
-      en: "Hero invitation: name, role, a nudge to scroll. The first houses show up ahead, not the whole town at once.",
+      ru: "Каждый дом у дороги — раздел резюме. В некоторые можно зайти.",
+      en: "Every house by the road is a section of the resume. Some of them you can walk into.",
     },
     kind: "hero",
     side: "right",
@@ -68,8 +69,8 @@ export const routeStopsAll: RouteStopConfig[] = [
       en: "House of skills",
     },
     summary: {
-      ru: "Библиотека анимаций: 10–15 изолированных демо-блоков с подписями, ленивая подгрузка по Intersection Observer.",
-      en: "An animation library: 10-15 isolated demos with short captions, lazily mounted via Intersection Observer.",
+      ru: "Живые демо анимаций и интерактива. Зайдите и потрогайте.",
+      en: "Live demos of motion and interaction. Step inside and try them.",
     },
     kind: "house",
     side: "left",
@@ -83,8 +84,8 @@ export const routeStopsAll: RouteStopConfig[] = [
       en: "Mini-game: assemble the interface",
     },
     summary: {
-      ru: "Передышка между первыми домами: drag-and-drop блоков UI по слотам макета, шутливая реакция персонажа в конце.",
-      en: "A breather between the first houses: drag UI blocks into layout slots, with a joking reaction at the end.",
+      ru: "Передышка: соберите интерфейс из блоков.",
+      en: "A breather: assemble an interface from blocks.",
     },
     kind: "interlude",
     side: "right",
@@ -98,8 +99,8 @@ export const routeStopsAll: RouteStopConfig[] = [
       en: "House of technologies",
     },
     summary: {
-      ru: "Стек с честным уровнем владения по каждому пункту. Раскрытие — инлайн прямо на маршруте.",
-      en: "The stack with an honest level for every item. It opens inline, right on the route.",
+      ru: "Стек: чем пользуюсь и насколько уверенно.",
+      en: "The stack: what I use and how confidently.",
     },
     kind: "house",
     side: "left",
@@ -113,8 +114,8 @@ export const routeStopsAll: RouteStopConfig[] = [
       en: "House of case studies",
     },
     summary: {
-      ru: "Реальные проекты: «было/стало», задача клиента и почему выбрано такое решение. Кандидат на полноэкранный заход внутрь.",
-      en: "Real projects: before and after, the client's task and why this solution won. A candidate for a full-screen walk-in.",
+      ru: "Проекты: задача, решение и результат — на настоящих скриншотах.",
+      en: "Projects: the task, the solution and the result, on real screenshots.",
     },
     kind: "house",
     side: "right",
@@ -146,8 +147,8 @@ export const routeStopsAll: RouteStopConfig[] = [
       en: "House of experience",
     },
     summary: {
-      ru: "Таймлайн: даты, места, ключевые точки роста.",
-      en: "A timeline: dates, places, the turning points.",
+      ru: "Путь и награды. Зайдите внутрь.",
+      en: "The path so far and the trophies. Step inside.",
     },
     kind: "house",
     side: "right",
@@ -161,8 +162,8 @@ export const routeStopsAll: RouteStopConfig[] = [
       en: "About me and contacts",
     },
     summary: {
-      ru: "Почему фронтенд, откуда путь, что дальше. Контакты, CTA и PDF-версия резюме — здесь маршрут логически заканчивается.",
-      en: "Why frontend, where the path started, what comes next. Contacts, a CTA and the PDF resume - the route logically ends here.",
+      ru: "Почему фронтенд и как со мной связаться.",
+      en: "Why frontend, and how to get in touch.",
     },
     kind: "house",
     side: "left",
@@ -176,8 +177,8 @@ export const routeStopsAll: RouteStopConfig[] = [
       en: "End of the route",
     },
     summary: {
-      ru: "Дальше — только оверскролл: resistance-эффект, бонусная сцена, ачивки и секундомер времени на сайте.",
-      en: "Beyond this point only overscroll: a resistance effect, a bonus scene, achievements and the time-on-site counter.",
+      ru: "Конец маршрута. Спасибо, что дошли.",
+      en: "The end of the route. Thanks for walking it.",
     },
     kind: "outro",
     side: "right",

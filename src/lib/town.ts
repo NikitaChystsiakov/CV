@@ -133,6 +133,18 @@ const Q3: Cell = { x: -26, d: 48 };
 const Q4 = { x: -31, d: 55, wide: true } as const;
 
 /**
+ * Дорожка к дому: от полотна вверх-вправо, перпендикулярно левой грани цоколя,
+ * и уходит под дом — конец прячется под картинкой. Прежняя шла параллельно
+ * грани в двух клетках перед ней, под дом не заходила, и её скруглённый конец
+ * торчал у цоколя «сосиской». Грань цоколя — линия d − x = 19 (от угла
+ * (11,5; 30,5) до основания (22; 41)); конечная точка (15; 32) — уже за ней.
+ */
+const DRIVE: [Cell, Cell] = [
+  { x: 10, d: 37 },
+  { x: 15, d: 32 },
+];
+
+/**
  * Улица по остановкам — таблица из docs/город.md, раздел 3.
  *
  * Ключи совпадают с id в route.ts. Остановки без записи (черновая развилка)
@@ -143,10 +155,7 @@ const TOWN: Record<string, TownStop> = {
   // напротив — сквер с лавочкой, откуда начинается прогулка
   hero: {
     house: { x: 22, d: 41 },
-    drive: [
-      { x: 10, d: 31 },
-      { x: 17, d: 38 },
-    ],
+    drive: DRIVE,
     props: [
       { ...F1, name: "lamp" },
       { ...F3, name: "lamp", flip: true },
@@ -166,10 +175,7 @@ const TOWN: Record<string, TownStop> = {
   // напротив, над текстом — сквер с деревьями
   skills: {
     house: { x: 22, d: 41 },
-    drive: [
-      { x: 10, d: 31 },
-      { x: 17, d: 38 },
-    ],
+    drive: DRIVE,
     props: [
       { ...F1, name: "flowerbed" },
       { ...F2, name: "bush" },
@@ -190,10 +196,7 @@ const TOWN: Record<string, TownStop> = {
   // урна у стола; напротив — лавочка для зрителей
   minigame: {
     house: { x: 22, d: 41 },
-    drive: [
-      { x: 10, d: 31 },
-      { x: 17, d: 38 },
-    ],
+    drive: DRIVE,
     props: [
       { x: 17, d: 13, name: "fence", back: true },
       { x: 26, d: 14, name: "fence", back: true },
@@ -212,10 +215,7 @@ const TOWN: Record<string, TownStop> = {
   // Дом технологий: фонарь у двери, ели за домом, клумба; сквер над текстом
   tech: {
     house: { x: 22, d: 41 },
-    drive: [
-      { x: 10, d: 31 },
-      { x: 17, d: 38 },
-    ],
+    drive: DRIVE,
     props: [
       { ...F1, name: "lamp" },
       { ...F2, name: "flowerbed" },
@@ -236,10 +236,7 @@ const TOWN: Record<string, TownStop> = {
   // к дому, как у входа в музей
   cases: {
     house: { x: 22, d: 41 },
-    drive: [
-      { x: 10, d: 31 },
-      { x: 17, d: 38 },
-    ],
+    drive: DRIVE,
     props: [
       { ...F1, name: "flowerbed" },
       { ...F2, name: "flowerbed" },
@@ -261,10 +258,7 @@ const TOWN: Record<string, TownStop> = {
   // поэтому низ у стороны текста занят — декор уходит выше
   experience: {
     house: { x: 22, d: 41 },
-    drive: [
-      { x: 10, d: 31 },
-      { x: 17, d: 38 },
-    ],
+    drive: DRIVE,
     props: [
       { ...S2, name: "tree", back: true },
       { ...S1, name: "bench", flip: true },
@@ -282,10 +276,7 @@ const TOWN: Record<string, TownStop> = {
   // стороны текста отдан волейбольной площадке (landmark-spots.ts)
   about: {
     house: { x: 22, d: 41 },
-    drive: [
-      { x: 10, d: 31 },
-      { x: 17, d: 38 },
-    ],
+    drive: DRIVE,
     props: [
       { ...F1, name: "flowerbed" },
       { ...F2, name: "flowerbed" },
@@ -304,10 +295,7 @@ const TOWN: Record<string, TownStop> = {
   // Финиш: фонари парой, дальше пусто — за финишем ничего нет
   outro: {
     house: { x: 22, d: 41 },
-    drive: [
-      { x: 10, d: 31 },
-      { x: 17, d: 38 },
-    ],
+    drive: DRIVE,
     props: [
       { ...F1, name: "lamp" },
       { ...F3, name: "lamp", flip: true },

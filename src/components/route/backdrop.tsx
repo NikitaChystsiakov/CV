@@ -49,7 +49,10 @@ export function TownBackdrop() {
   const nodes = backdropNodes();
 
   return (
-    <div aria-hidden className="town-layer pointer-events-none absolute inset-0 hidden md:block">
+    // Прозрачность — на весь слой, а не на каждый дом: соседние фоновые дома,
+    // заходящие друг на друга, не просвечивают один сквозь другой, и браузеру
+    // это одна группа прозрачности вместо десятков
+    <div aria-hidden className="backdrop-layer town-layer pointer-events-none absolute inset-0 hidden md:block">
       {nodes.map((node) => (
         <div
           key={node.key}

@@ -117,19 +117,33 @@ export function Achievements({ className }: { className: string }) {
         onClick={() => setOpen((value) => !value)}
         className={className}
       >
-        {/* Звезда — значок интерфейса, как лупа у палитры, а не иллюстрация */}
-        <svg aria-hidden viewBox="0 0 16 16" className={`size-3.5 ${got > 0 ? "text-accent" : ""}`}>
+        {/* Прогресс — кольцом, а не цифрами: в верхней панели номеров нет
+            (правило проекта), число — в подписи для диктора и в самой панели.
+            Звезда внутри — значок интерфейса, как лупа у палитры */}
+        <svg aria-hidden viewBox="0 0 20 20" className="size-5 -rotate-90">
+          <circle cx="10" cy="10" r="8.5" fill="none" stroke="var(--color-line)" strokeWidth="1.5" />
+          <circle
+            cx="10"
+            cy="10"
+            r="8.5"
+            fill="none"
+            stroke="var(--color-accent)"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            pathLength={1}
+            strokeDasharray={`${(got / TOTAL).toFixed(3)} 1`}
+            className={got === 0 ? "opacity-0" : ""}
+          />
           <path
-            d="M8 1.6l1.9 4 4.3.5-3.2 2.9.9 4.3L8 11.1 4.1 13.3l.9-4.3L1.8 6.1l4.3-.5z"
-            fill={got > 0 ? "currentColor" : "none"}
-            stroke="currentColor"
-            strokeWidth="1.2"
+            d="M10 5.2l1.4 2.9 3.2.4-2.4 2.2.7 3.2L10 12.3l-2.9 1.6.7-3.2-2.4-2.2 3.2-.4z"
+            transform="rotate(90 10 10)"
+            fill={got > 0 ? "var(--color-accent)" : "none"}
+            stroke={got > 0 ? "var(--color-accent)" : "currentColor"}
+            strokeWidth="1"
             strokeLinejoin="round"
           />
         </svg>
-        <span data-achievements-count className="ml-1.5 tabular-nums">
-          {got}/{TOTAL}
-        </span>
+        <span data-achievements-count={got} hidden />
       </button>
 
       <AnimatePresence>

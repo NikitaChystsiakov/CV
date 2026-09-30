@@ -30,6 +30,8 @@ export function RouteTrack() {
     stiffness: 120,
     damping: 30,
     mass: 0.4,
+    // Заход по ссылке на остановку: линия не прорисовывается от начала
+    skipInitialAnimation: true,
   });
   // Пройденная часть серпантина кончается у ног персонажа: долю пишет он сам
   const walked = useMotionValue(0);

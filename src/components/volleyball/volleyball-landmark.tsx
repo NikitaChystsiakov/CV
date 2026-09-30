@@ -142,12 +142,16 @@ export function VolleyballLandmark({ assist = false }: { assist?: boolean }) {
     setSaid("stopped");
   }, []);
 
-  // Escape останавливает игру, где бы ни был фокус. Пробел так не ловим:
+  // Escape останавливает игру, если фокус на площадке. Чужой Escape — закрыть
+  // дом, палитру, разбор — партию не трогает: слушатели висят на одном
+  // document, и остановить их друг от друга нельзя. Пробел так не ловим:
   // вне кнопки он листает страницу, и отбирать его у посетителя нельзя
   useEffect(() => {
     if (!playing) return;
     const onKey = (event: globalThis.KeyboardEvent) => {
-      if (event.key === "Escape") stop();
+      if (event.key !== "Escape") return;
+      if (!holder.current?.contains(document.activeElement)) return;
+      stop();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
