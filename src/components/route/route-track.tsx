@@ -3,6 +3,7 @@
 import { type MotionValue, useMotionValue, useMotionValueEvent, useScroll, useSpring } from "framer-motion";
 import { useEffect, useRef } from "react";
 
+import { TownBackdrop } from "@/components/route/backdrop";
 import { Clouds } from "@/components/route/clouds";
 import { Constellations } from "@/components/route/constellations";
 import { RouteStop } from "@/components/route/route-stop";
@@ -38,6 +39,9 @@ export function RouteTrack() {
       {/* Небо и окружение: заполняют вертикальные и боковые промежутки между домами */}
       <Clouds stopCount={routeStops.length} />
       <Constellations sides={routeStops.map((stop) => stop.side)} />
+
+      {/* Фоновые кварталы по краям улицы: раньше остановок, значит под ними */}
+      <TownBackdrop />
 
       {/* Кликабельные детали про владельца: стоят у дороги рядом со своими домами */}
       <SceneryLandmarks />
@@ -144,7 +148,10 @@ function TownRoad({ progress }: { progress: MotionValue<number> }) {
       data-road
       viewBox={`0 0 ${TOWN_HALF_WIDTH * 2} ${height}`}
       preserveAspectRatio="none"
-      className="pointer-events-none absolute inset-y-0 left-1/2 hidden h-full -translate-x-1/2 md:block"
+      // Свой композитный слой (will-change): пройденная линия перерисовывается
+      // каждый кадр, и без слоя вместе с ней заново растеризовалась бы вся
+      // полоса экрана вдоль дороги — дома, фонари, задник под ней
+      className="pointer-events-none absolute inset-y-0 left-1/2 hidden h-full -translate-x-1/2 will-change-transform md:block"
       style={{ width: townSize(TOWN_HALF_WIDTH * 2) }}
     >
       {/* Ширина полотна — 86 базовых px (было 66, до того 44): по ленте ходит

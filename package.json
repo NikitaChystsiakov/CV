@@ -9,7 +9,8 @@
     "lint": "eslint",
     "verify": "node scripts/verify.mjs",
     "assets": "node scripts/prepare-assets.mjs",
-    "walk": "node scripts/prepare-walk.mjs"
+    "walk": "node scripts/prepare-walk.mjs",
+    "perf": "node scripts/perf.mjs"
   },
   "dependencies": {
     "framer-motion": "^13.2.0",

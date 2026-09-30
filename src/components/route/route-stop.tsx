@@ -129,10 +129,12 @@ export function RouteStop({ stop, index }: { stop: RouteStopConfig; index: numbe
         <div
           // Отступ у дорожки, чтобы текст не заезжал под зарубку остановки.
           // Колонка выбирается явно: вторая половина сетки отдана городку
+          // `stop-copy` — мягкая подложка цвета фона под текстом (globals.css):
+          // декор и задник городка идут фоном, заголовок и абзац не теряются
           className={
             textOnRight
-              ? "md:col-start-2 md:pl-8 md:text-left rail-safe"
-              : "md:col-start-1 md:row-start-1 md:pr-8 md:text-right"
+              ? "stop-copy relative md:col-start-2 md:pl-8 md:text-left rail-safe"
+              : "stop-copy relative md:col-start-1 md:row-start-1 md:pr-8 md:text-right"
           }
         >
           {isHero ? (

@@ -11,7 +11,12 @@
  *   1. Возвращает прозрачность там, где генератор залил фон (chessboard, fence).
  *   2. Вырезает однотонный фон-хромакей (персонаж и жители приходят на
  *      пурпурном #FF00FF: зелёный съел бы бирюзовый свитер и траву).
- *   3. Обрезает по объекту и ужимает до рабочего размера в WebP: исходники
+ *   3. Чистит кайму у ассетов, пришедших уже вырезанными (`defringe`): см.
+ *      функцию `defringe` ниже.
+ *   4. Для фоновых кварталов (`tones`) пишет ещё два варианта тона — теплее и
+ *      холоднее: ряд из одного ассета не читается повтором, а CSS-фильтров на
+ *      десятках картинок нет — они дорого растеризуются на каждом кадре.
+ *   5. Обрезает по объекту и ужимает до рабочего размера в WebP: исходники
  *      весят по полтора мегабайта, в сцене столько не нужно.
  *
  * Подложку под объектом — кусок газона или грунта — НЕ трогает. Это решение
@@ -56,6 +61,10 @@ const ASSETS = {
   flowerbed: { width: 300 },
   workbench: { width: 420 },
   "volleyball-court": { width: 640 },
+
+  // Фоновые кварталы: дом пришёл уже вырезанным, но с каймой и чуть
+  // прозрачным телом. На экране он мельче домов маршрута (~280 базовых px)
+  "bg-house-1": { width: 560, defringe: true, tones: true },
 
   // Шахматы. Стол пришёл с именем от генератора — переименовываем на выходе
   "b380fe00-9fd3-45ec-ad3c-7e447db627d1_b45ff9eb4bf5": { width: 640, as: "table" },
@@ -160,6 +169,57 @@ function chromaKey(data, key) {
   }
 }
 
+/**
+ * Кайма у ассета, вырезанного до нас. У фонового дома по контуру тянется
+ * ореол почти прозрачных пикселей случайного цвета (чистый красный, синий —
+ * остатки вырезания), а тело непрозрачно не до конца (альфа 250–254) — на
+ * сцене дом слегка просвечивает. Лечим тремя шагами:
+ *   1. ореол слабее `FRINGE_LOW` убираем совсем;
+ *   2. тело плотнее `FRINGE_HIGH` делаем непрозрачным;
+ *   3. у оставшегося полупрозрачного края цвет берём у соседних непрозрачных
+ *      пикселей (радиус 2): край остаётся мягким, но без чужого цвета.
+ */
+const FRINGE_LOW = 40;
+const FRINGE_HIGH = 230;
+
+function defringe(data, width, height) {
+  for (let i = 3; i < data.length; i += 4) {
+    if (data[i] < FRINGE_LOW) data[i] = 0;
+    else if (data[i] > FRINGE_HIGH) data[i] = 255;
+  }
+  const source = Uint8ClampedArray.from(data);
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const i = (y * width + x) * 4;
+      const alpha = source[i + 3];
+      if (alpha === 0 || alpha === 255) continue;
+      const sum = [0, 0, 0];
+      let count = 0;
+      for (let dy = -2; dy <= 2; dy += 1) {
+        for (let dx = -2; dx <= 2; dx += 1) {
+          const nx = x + dx;
+          const ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+          const j = (ny * width + nx) * 4;
+          if (source[j + 3] !== 255) continue;
+          sum[0] += source[j];
+          sum[1] += source[j + 1];
+          sum[2] += source[j + 2];
+          count += 1;
+        }
+      }
+      if (count === 0) continue;
+      for (let c = 0; c < 3; c += 1) data[i + c] = Math.round(sum[c] / count);
+    }
+  }
+}
+
+/** Тона фоновых кварталов: `warm` — теплее, `cool` — холоднее и светлее. */
+const TONES = {
+  warm: { hue: -8, saturation: 0.86, brightness: 1 },
+  cool: { hue: 12, saturation: 0.66, brightness: 1.05 },
+};
+
 /** Границы непрозрачного содержимого. */
 function contentBox(data, width, height) {
   let minX = width;
@@ -197,16 +257,28 @@ async function prepare(name, options) {
   }
 
   if (options.key) chromaKey(data, options.key);
+  if (options.defringe) defringe(data, width, height);
 
   const box = contentBox(data, width, height);
   if (!box) throw new Error(`${name}: после подготовки не осталось содержимого`);
 
   const out = join(OUT, `${options.as ?? name}.webp`);
-  const result = await sharp(data, { raw: { width, height, channels: 4 } })
-    .extract(box)
-    .resize({ width: options.width, withoutEnlargement: true })
-    .webp({ quality: 92, alphaQuality: 100 })
-    .toFile(out);
+  const base = () =>
+    sharp(data, { raw: { width, height, channels: 4 } })
+      .extract(box)
+      .resize({ width: options.width, withoutEnlargement: true });
+  const result = await base().webp({ quality: 92, alphaQuality: 100 }).toFile(out);
+
+  // Варианты тона: сдвиг оттенка и насыщенности, яркость почти та же —
+  // задник остаётся одним кварталом, но соседние дома не близнецы
+  if (options.tones) {
+    for (const [suffix, tone] of Object.entries(TONES)) {
+      await base()
+        .modulate(tone)
+        .webp({ quality: 92, alphaQuality: 100 })
+        .toFile(join(OUT, `${options.as ?? name}-${suffix}.webp`));
+    }
+  }
 
   const before = statSync(file).size / 1024;
   const after = result.size / 1024;
@@ -233,7 +305,13 @@ async function main() {
   const manifest = {};
   for (const name of names) {
     const key = ASSETS[name].as ?? name;
-    manifest[key] = { src: `/scene/${key}.webp`, ...(await prepare(name, ASSETS[name])) };
+    const size = await prepare(name, ASSETS[name]);
+    manifest[key] = { src: `/scene/${key}.webp`, ...size };
+    if (ASSETS[name].tones) {
+      for (const suffix of Object.keys(TONES)) {
+        manifest[`${key}-${suffix}`] = { src: `/scene/${key}-${suffix}.webp`, ...size };
+      }
+    }
   }
 
   if (!only) {

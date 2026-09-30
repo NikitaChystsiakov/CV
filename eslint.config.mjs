@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Локальные папки агентов (в .gitignore): в них бывают целые рабочие
+    // копии проекта — git worktree с чужими node_modules и сборками
+    ".claude/**",
   ]),
 ]);
 

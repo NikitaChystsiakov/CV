@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { type ComponentType, useEffect, useRef, useState } from "react";
 
 import { ChessScene } from "@/components/route/chess-scene";
+import { VolleyballCourt } from "@/components/route/landmarks";
 import { SceneObject } from "@/components/route/scene-object";
 import { SceneProp } from "@/components/route/scene-prop";
 import { UI } from "@/lib/content";
@@ -81,7 +82,7 @@ function TownItem({ node }: { node: TownNode }) {
       // налезал на дома; по карте объекты стоят на своих клетках, пересечений
       // нет ни на одной ширине (замерено), а без деревьев за домами улица на
       // планшете становится пустым полем
-      className="absolute"
+      className={node.wide ? "absolute hidden xl:block" : "absolute"}
       style={{
         ...anchor(node),
         opacity: node.opacity,
@@ -123,13 +124,10 @@ export function SceneryLandmarks() {
   );
 }
 
-/**
- * Какой компонент рисует площадку. Волейбола здесь пока нет: SVG-корт убран,
- * площадка вернётся ассетом владельца с мячом поверх (landmarks.tsx,
- * docs/нужны-ассеты.md).
- */
+/** Какой компонент рисует площадку. */
 const LANDMARK_SCENES: Record<LandmarkKind, ComponentType> = {
   chess: ChessScene,
+  volleyball: VolleyballCourt,
 };
 
 /**

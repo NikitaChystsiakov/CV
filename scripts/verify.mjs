@@ -1006,14 +1006,27 @@ async function main() {
         Boolean(skyGlow) && skyGlow.nested === 0 && skyGlow.gradient,
         skyGlow ? `вложенных узлов: ${skyGlow.nested}` : "нет узла",
       );
-      const landmarks = await page
-        .locator("[data-landmark]")
-        .evaluateAll((els) => els.map((el) => el.dataset.landmark));
+      // До 29.09.2026 проверка требовала ровно одну площадку — шахматы: корт
+      // волейбола был SVG-контуром и его сняли. С ассетом корта площадка
+      // вернулась, поэтому инвариант записан по существу, строже прежнего:
+      // каждая площадка собрана из ассетов владельца (/scene/), а кодом у неё
+      // нарисован разве что мяч (свой SVG с токенами --ball)
+      const landmarks = await page.locator("[data-landmark]").evaluateAll((els) =>
+        els.map((el) => ({
+          kind: el.dataset.landmark,
+          art: [...el.querySelectorAll("img")].some((img) => /\/scene\//.test(decodeURIComponent(img.currentSrc || img.src))),
+          drawn: [...el.querySelectorAll("svg")].filter(
+            (svg) => !svg.querySelector('[fill="var(--color-ball)"]') && !svg.closest("[data-volley-ball]"),
+          ).length,
+        })),
+      );
       report(
         "Критика",
         "на маршруте нет площадок, нарисованных кодом",
-        landmarks.length === 1 && landmarks[0] === "chess",
-        `площадки: ${landmarks.join(", ") || "нет"}`,
+        landmarks.length >= 1 &&
+          landmarks.some((l) => l.kind === "chess") &&
+          landmarks.every((l) => l.art && l.drawn === 0),
+        `площадки: ${landmarks.map((l) => `${l.kind}${l.art ? "" : " без ассета"}${l.drawn ? ` +${l.drawn} svg` : ""}`).join(", ") || "нет"}`,
       );
       const tableRatio = await page.evaluate(() => {
         const table = document.querySelector("[data-chess-scene] img")?.getBoundingClientRect();
