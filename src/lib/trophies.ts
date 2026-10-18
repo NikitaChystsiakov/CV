@@ -36,8 +36,8 @@ export const trophies: Trophy[] = [
       en: "Chess",
     },
     summary: {
-      ru: "Кандидат в мастера спорта. Около 30 медалей чемпионатов области и крупных турниров.",
-      en: "Candidate Master of Sports. Around 30 medals from regional championships and major tournaments.",
+      ru: "Кандидат в мастера спорта. 21 медаль: 4 золотых, 6 серебряных, 11 бронзовых. Городские, областные и региональные турниры, матчи между сборными городов.",
+      en: "Candidate Master of Sports. 21 medals: 4 gold, 6 silver, 11 bronze. City, regional and oblast tournaments, matches between city teams.",
     },
     landmark: "chess",
   },
@@ -48,8 +48,8 @@ export const trophies: Trophy[] = [
       en: "Volleyball",
     },
     summary: {
-      ru: "Медали и кубки областных турниров. Командный спорт, если коротко.",
-      en: "Medals and cups from regional tournaments. A team sport, in short.",
+      ru: "Первый разряд, член сборной БГУИР. Два кубка: пляжный турнир ко Дню пожарной службы в Рогачёве и первое место на чемпионате среди факультетов БГУИР.",
+      en: "First sports category, a member of the BSUIR team. Two cups: a beach tournament for Firefighters' Day in Rogachev and first place at the BSUIR faculty championship.",
     },
     landmark: "volleyball",
   },
