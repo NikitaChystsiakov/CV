@@ -11,7 +11,8 @@ import { RouteStop } from "@/components/route/route-stop";
 import { SceneryLandmarks } from "@/components/route/scenery";
 import { Walker } from "@/components/route/walker";
 import { routeStops } from "@/lib/route";
-import { TOWN_HALF_WIDTH, drivePaths, roadHeight, roadPath, townSize } from "@/lib/town";
+import { ROAD_WIDTH, TOWN_HALF_WIDTH, drivePaths, roadHeight, roadPath, townSize } from "@/lib/town";
+import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
 
 /**
  * Вертикальный контейнер маршрута: дорога + остановки по порядку из конфига.
@@ -33,8 +34,9 @@ export function RouteTrack() {
     // Заход по ссылке на остановку: линия не прорисовывается от начала
     skipInitialAnimation: true,
   });
-  // Пройденная часть серпантина кончается у ног персонажа: долю пишет он сам
+  // Пройденная часть дороги кончается у ног персонажа: долю пишет он сам
   const walked = useMotionValue(0);
+  useTownZoom(trackRef);
 
   return (
     // id нужен skip-link из верхней панели: с клавиатуры маршрут начинается отсюда
@@ -61,6 +63,58 @@ export function RouteTrack() {
       </ol>
     </div>
   );
+}
+
+/** Масштаб городка на первом экране: вид сверху. */
+const ZOOM_FROM = 0.45;
+/** За какую долю высоты экрана прокрутки камера спускается к арке. */
+const ZOOM_SPAN = 0.7;
+/** Сдвиг улицы вправо на общем плане, доля ширины экрана: имя стоит слева. */
+const ZOOM_SHIFT = 0.2;
+
+/**
+ * Наезд камеры на первом экране (globals.css, `.town-zoom`).
+ *
+ * Первый экран — общий план города сверху; за первые 70% экрана прокрутки
+ * камера спускается к арке. Масштаб пишется в DOM переменными на корне
+ * маршрута, а не состоянием: он меняется каждый кадр прокрутки. Плавность
+ * даёт Lenis, своей пружины нет — иначе город отставал бы от текста hero.
+ * Ниже 768px городка нет, а при reduced-motion наезда нет совсем.
+ */
+function useTownZoom(trackRef: React.RefObject<HTMLDivElement | null>) {
+  const reduced = usePrefersReducedMotion();
+  const { scrollY } = useScroll();
+
+  const apply = (scroll: number) => {
+    const track = trackRef.current;
+    if (!track) return;
+    if (reduced || window.innerWidth < 768) {
+      track.style.setProperty("--zoom-t", "none");
+      track.style.setProperty("--zoom-veil", "0");
+      return;
+    }
+    const t = Math.min(Math.max(scroll / (window.innerHeight * ZOOM_SPAN), 0), 1);
+    // Плавный старт и мягкая посадка: камера разгоняется и тормозит у арки
+    const eased = t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
+    const scale = ZOOM_FROM + (1 - ZOOM_FROM) * eased;
+    const shift = (1 - eased) * ZOOM_SHIFT * window.innerWidth;
+    track.style.setProperty(
+      "--zoom-t",
+      t >= 1 ? "none" : `translateX(${shift.toFixed(1)}px) scale(${scale.toFixed(4)})`,
+    );
+    track.style.setProperty("--zoom-veil", (1 - eased).toFixed(3));
+  };
+
+  useEffect(() => {
+    apply(scrollY.get());
+    const onResize = () => apply(scrollY.get());
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+    // apply читает только ref и значения окна
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reduced]);
+
+  useMotionValueEvent(scrollY, "change", apply);
 }
 
 /**
@@ -94,20 +148,24 @@ function useRoadProgress(progress: MotionValue<number>) {
     if (!el) return;
 
     const measure = () => {
-      const ctm = el.getScreenCTM();
+      const svg = el.ownerSVGElement;
       const userLength = el.getTotalLength();
-      if (!ctm || userLength === 0) return;
+      if (!svg || userLength === 0) return;
 
-      // Длина ломаной в экранных координатах: сотни выборок хватает, чтобы
-      // повороты серпантина не съели точность, и это разовый расчёт
+      // Длина пути в пикселях раскладки, а не экрана: на первом экране городок
+      // уменьшен наездом камеры (`useTownZoom`), и экранная длина вышла бы
+      // вдвое короче настоящей. Масштаб viewBox → раскладка берётся из размеров
+      // самого <svg>, CSS-трансформы на них не влияют
+      const box = svg.viewBox.baseVal;
+      const sx = svg.clientWidth / box.width;
+      const sy = svg.clientHeight / box.height;
       const steps = 240;
       let sum = 0;
-      let previous = new DOMPoint(el.getPointAtLength(0).x, el.getPointAtLength(0).y).matrixTransform(ctm);
+      let previous = el.getPointAtLength(0);
       for (let i = 1; i <= steps; i += 1) {
         const point = el.getPointAtLength((userLength * i) / steps);
-        const screen = new DOMPoint(point.x, point.y).matrixTransform(ctm);
-        sum += Math.hypot(screen.x - previous.x, screen.y - previous.y);
-        previous = screen;
+        sum += Math.hypot((point.x - previous.x) * sx, (point.y - previous.y) * sy);
+        previous = point;
       }
 
       screenLength.current = sum;
@@ -155,20 +213,21 @@ function TownRoad({ progress }: { progress: MotionValue<number> }) {
       // Свой композитный слой (will-change): пройденная линия перерисовывается
       // каждый кадр, и без слоя вместе с ней заново растеризовалась бы вся
       // полоса экрана вдоль дороги — дома, фонари, задник под ней
-      className="pointer-events-none absolute inset-y-0 left-1/2 hidden h-full -translate-x-1/2 will-change-transform md:block"
+      className="town-zoom pointer-events-none absolute inset-y-0 left-1/2 hidden h-full -translate-x-1/2 will-change-transform md:block"
       style={{ width: townSize(TOWN_HALF_WIDTH * 2) }}
     >
-      {/* Ширина полотна — 86 базовых px (было 66, до того 44): по ленте ходит
-          персонаж ростом 120, и на узкой дороге шаг не читался. Бордюр, съезды,
+      {/* Ширина полотна — ROAD_WIDTH, 100 базовых px с 10.10.2026 (было 86,
+          до того 66 и 44): проспект — главная линия картинки, по нему идёт
+          персонаж ростом 140. Бордюр, съезды,
           разметка и пройденная линия растут в той же пропорции ×1,3. Декор
           обочины отодвинут в town.ts, чтобы не налезал на полотно.
           Бордюр тоном темнее — сначала оба, потом заливка поверх: так съезд к
           двери входит в дорогу без шва. Первой идёт сама дорога: она тянется на
           весь маршрут, и проверкам не надо угадывать, какой путь тут главный */}
-      <path d={road} className="town-kerb" style={{ strokeWidth: townSize(99) }} />
+      <path d={road} className="town-kerb" style={{ strokeWidth: townSize(ROAD_WIDTH + 13) }} />
       <path d={drives} className="town-kerb" style={{ strokeWidth: townSize(55) }} />
       <path d={drives} className="town-road" style={{ strokeWidth: townSize(44) }} />
-      <path d={road} className="town-road" style={{ strokeWidth: townSize(86) }} />
+      <path d={road} className="town-road" style={{ strokeWidth: townSize(ROAD_WIDTH) }} />
 
       {/* Разметка по осевой и пройденная часть пути поверх неё */}
       <path d={road} className="route-path" style={{ strokeWidth: townSize(6.5) }} />

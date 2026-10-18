@@ -61,8 +61,11 @@ const FOCUS = 0.62;
  * Рост стоящего персонажа в базовых пикселях городка. Было 92 — на быстрой
  * прокрутке шаг не читался. 120 — вровень с верхом дверей домов (проём
  * ~105–130 базовых px, замер по ассетам): человек у двери своего роста, а не великан.
+ * 10.10.2026 владелец снова: «человечек слишком маленький, из-за этого на
+ * скролле он прям телепортируется». 140 — чуть выше двери: главный герой
+ * кадра читается сразу, а прыжки вбок убрал прямой проспект.
  */
-const HEIGHT = 120;
+const HEIGHT = 140;
 
 type Pose = "down" | "diag" | "up" | "upDiag";
 const POSES: Pose[] = ["down", "diag", "up", "upDiag"];
@@ -84,8 +87,13 @@ const STRIDE_FIT = 0.82;
 
 /** Потолок частоты шага, полных циклов в секунду: выше ноги мелькали бы. */
 const MAX_CADENCE = 2;
-/** Сколько базовых пикселей надо пройти против прежнего хода, чтобы развернуться. */
-const TURN_AFTER = 14;
+/**
+ * Сколько базовых пикселей надо пройти против прежнего хода, чтобы развернуться.
+ * Было 14 — под серпантин, где путь по диагонали в 1,7 раза длиннее прокрутки.
+ * На прямом проспекте путь равен прокрутке, и с 14 первый шаг колеса назад он
+ * ещё пятился. 8 — всё ещё выше дрожи прокрутки в пару пикселей.
+ */
+const TURN_AFTER = 8;
 /** Длиннее этой паузы между кадрами время не считаем: вкладка спала, это не скорость. */
 const MAX_FRAME_MS = 100;
 
@@ -252,7 +260,9 @@ export function Walker({
     const measure = () => {
       const road = track.querySelector<SVGSVGElement>("[data-road]");
       if (!road) return;
-      const unit = road.getBoundingClientRect().width / (TOWN_HALF_WIDTH * 2);
+      // Ширина раскладки, а не экранная: на первом экране городок уменьшен
+      // наездом камеры, а персонаж живёт внутри того же масштаба
+      const unit = road.clientWidth / (TOWN_HALF_WIDTH * 2);
       const height = track.offsetHeight;
       const center = track.offsetWidth / 2;
       const scaleY = height / roadHeight();
@@ -285,7 +295,7 @@ export function Walker({
   });
 
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 z-10 hidden md:block">
+    <div aria-hidden className="town-zoom pointer-events-none absolute inset-0 z-10 hidden md:block">
       {/* Тело — точка на дороге, где стоят ноги; всё остальное отсчитывается от неё */}
       <div ref={bodyRef} data-walker className="absolute left-0 top-0 will-change-transform">
         <div

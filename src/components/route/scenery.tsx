@@ -37,7 +37,9 @@ export function StopTown({ index, stop }: { index: number; stop: RouteStopConfig
   return (
     <div
       aria-hidden
-      className="town-layer pointer-events-none absolute inset-0 hidden md:block"
+      className="town-layer town-zoom pointer-events-none absolute inset-0 hidden md:block"
+      // Точка наезда камеры — верх маршрута, в долях высоты этой остановки
+      style={{ "--zoom-y": `${-index * 100}%` } as React.CSSProperties}
     >
       {nodes.map((node) =>
         node.kind === "house" ? (

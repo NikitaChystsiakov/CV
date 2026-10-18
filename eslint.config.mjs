@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Черновые скрипты браузера агента, не код проекта
+    ".playwright-mcp/**",
     // Локальные папки агентов (в .gitignore): в них бывают целые рабочие
     // копии проекта — git worktree с чужими node_modules и сборками
     ".claude/**",
