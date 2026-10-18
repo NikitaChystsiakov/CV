@@ -6,6 +6,7 @@ import type { Localized } from "@/lib/i18n";
 import {
   awardTrophies,
   educationTrophies,
+  GROUP_LABEL,
   jobPeriod,
   LEVEL_LABEL,
   profile,
@@ -55,7 +56,8 @@ export const metadata: Metadata = {
 const LEVEL_ORDER: SkillLevel[] = ["daily", "confident", "familiar"];
 
 export default function CvPage() {
-  const { about, stack, jobs, cases, contacts } = profile;
+  const { headline, city, about, stack, skillGroups, jobs, projects, cases, contacts, languages } =
+    profile;
   const education = educationTrophies();
   const awards = awardTrophies();
 
@@ -76,8 +78,13 @@ export default function CvPage() {
             <Say text={UI.name} />
           </h1>
           <p className="mt-3 text-lg text-muted sm:text-xl">
-            <Say text={UI.role} />
+            <Say text={headline ?? UI.role} />
           </p>
+          {city && (
+            <p className="mt-1 font-mono text-xs uppercase tracking-[0.14em] text-muted">
+              <Say text={city} />
+            </p>
+          )}
           {about && (
             <p className="mt-8 max-w-[62ch] text-pretty text-base leading-relaxed sm:text-lg">
               <Say text={about} />
@@ -136,6 +143,28 @@ export default function CvPage() {
           </Section>
         )}
 
+        {skillGroups.length > 0 && (
+          <Section id="skills" title={UI.cvStack}>
+            <dl className="space-y-3">
+              {skillGroups.map((group) => (
+                <div key={group.id} className="grid gap-1 sm:grid-cols-[8rem_1fr] sm:gap-4">
+                  <dt className="font-mono text-xs uppercase tracking-[0.14em] text-muted sm:pt-1">
+                    <Say text={GROUP_LABEL[group.id]} />
+                  </dt>
+                  <dd>
+                    {group.items.map((item, index) => (
+                      <span key={index}>
+                        {index > 0 && ", "}
+                        <Say text={item} />
+                      </span>
+                    ))}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </Section>
+        )}
+
         {jobs.length > 0 && (
           <Section id="jobs" title={UI.cvJobs}>
             <ol className="space-y-8">
@@ -162,9 +191,50 @@ export default function CvPage() {
                       ))}
                     </ul>
                   )}
+                  {job.link && (
+                    <a
+                      href={job.link.href}
+                      className="mt-3 inline-block font-mono text-xs text-accent underline decoration-line hover:decoration-accent"
+                    >
+                      {job.link.label}
+                    </a>
+                  )}
                 </li>
               ))}
             </ol>
+          </Section>
+        )}
+
+        {projects.length > 0 && (
+          <Section id="projects" title={UI.cvProjects}>
+            <div className="space-y-10">
+              {projects.map((project) => (
+                <article key={project.id} className="print:break-inside-avoid">
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                    <h3 className="text-balance font-display text-lg font-bold tracking-tight">
+                      <Say text={project.title} />
+                    </h3>
+                    <p className="font-mono text-xs text-muted">
+                      <Say text={project.kind} /> · {project.year}
+                    </p>
+                  </div>
+                  <p className="mt-2 font-mono text-xs text-muted">{project.stack.join(" · ")}</p>
+                  <dl className="mt-4 space-y-3">
+                    {project.points.map((point, index) => (
+                      <Fact key={index} label={point.label} text={point.text} />
+                    ))}
+                  </dl>
+                  {project.github && (
+                    <a
+                      href={project.github}
+                      className="mt-3 inline-block font-mono text-xs text-accent underline decoration-line hover:decoration-accent"
+                    >
+                      {project.github.replace(/^https?:\/\//, "")}
+                    </a>
+                  )}
+                </article>
+              ))}
+            </div>
           </Section>
         )}
 
@@ -174,6 +244,18 @@ export default function CvPage() {
         {education.length > 0 && (
           <Section id="education" title={UI.cvEducation}>
             <TrophyList items={education} />
+          </Section>
+        )}
+
+        {languages.length > 0 && (
+          <Section id="languages" title={UI.cvLanguages}>
+            <ul className="space-y-1">
+              {languages.map((item, index) => (
+                <li key={index}>
+                  <Say text={item.name} /> <span className="text-muted">· {item.level}</span>
+                </li>
+              ))}
+            </ul>
           </Section>
         )}
 

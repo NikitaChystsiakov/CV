@@ -67,12 +67,12 @@ export const trophies: Trophy[] = [
   {
     id: "university",
     title: {
-      ru: "БГУИР",
-      en: "BSUIR",
+      ru: "БГУИР, инженерно-экономический факультет",
+      en: "BSUIR, Faculty of Engineering and Economics",
     },
     summary: {
-      ru: "Диплом в 2026 году.",
-      en: "Degree in 2026.",
+      ru: "Инженер-программист, выпуск 2027. Информационные системы и технологии (цифровой маркетинг).",
+      en: "Software engineer, class of 2027. Information systems and technologies (digital marketing).",
     },
   },
 ];

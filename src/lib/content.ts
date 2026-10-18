@@ -85,6 +85,14 @@ export const UI = {
   cvEducation: { ru: "Образование", en: "Education" },
   cvAwards: { ru: "Спорт и награды", en: "Sport and awards" },
   cvContacts: { ru: "Контакты", en: "Contacts" },
+  cvProjects: { ru: "Проекты", en: "Projects" },
+  cvLanguages: { ru: "Языки", en: "Languages" },
+
+  // Группы технологий в резюме (`SkillGroupId` в profile.ts)
+  groupFrontend: { ru: "Frontend", en: "Frontend" },
+  groupBackend: { ru: "Backend", en: "Backend" },
+  groupTools: { ru: "Инструменты", en: "Tools" },
+  groupBasic: { ru: "Базово", en: "Basics" },
 
   // Части кейса: задача клиента, решение, результат
   cvTask: { ru: "Задача", en: "Task" },

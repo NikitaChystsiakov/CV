@@ -71,6 +71,7 @@ export type RoomConfig = {
  */
 export const ROOM_STOP_IDS_WHEN_FILLED: Record<string, (keyof Profile)[]> = {
   cases: ["cases"],
+  about: ["about", "contacts"],
 };
 
 function filledRoomStopIds(): string[] {
