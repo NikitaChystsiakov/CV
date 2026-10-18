@@ -11,7 +11,7 @@ import { dashes } from "@/lib/i18n";
 import { useLang } from "@/lib/use-lang";
 import { LANDMARKS, stopTop, type LandmarkKind } from "@/lib/landmark-spots";
 import type { RouteStopConfig } from "@/lib/route";
-import { STOP_ASSETS } from "@/lib/scene-assets";
+import { STOP_ASSETS, houseDoor } from "@/lib/scene-assets";
 import { townNodes, townSize, type TownNode } from "@/lib/town";
 import { trophyByLandmark } from "@/lib/trophies";
 import { VolleyballLandmark } from "@/components/volleyball";
@@ -67,7 +67,7 @@ function TownHouse({
 
   return (
     <div className="absolute" style={anchor(node)}>
-      <SceneObject asset={asset} alt={alt} />
+      <SceneObject asset={asset} alt={alt} mirror={houseDoor(stop.id, stop.side)?.mirror} />
     </div>
   );
 }

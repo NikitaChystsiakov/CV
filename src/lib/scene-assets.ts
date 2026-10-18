@@ -35,7 +35,7 @@ function asset(name: string, display: number): SceneAsset {
 export const STOP_ASSETS: Record<string, SceneAsset> = {
   hero: asset("arch", 440),
   skills: asset("skillsHouse", 460),
-  minigame: asset("workbench", 420),
+  minigame: asset("workbench", 300),
   tech: asset("technologiesHouse", 460),
   cases: asset("casesHouse", 460),
   experience: asset("experienseHouse", 460),
@@ -62,14 +62,28 @@ export const HOUSE_DOORS: Record<string, { x: number; y: number }> = {
 };
 
 /**
+ * Дверь дома с учётом стороны улицы. Вход должен смотреть на дорогу: на левой
+ * стороне дверь нужна на правом фасаде (x > 0,5), на правой — на левом. Ассеты
+ * нарисованы с дверью по одну сторону, поэтому дом, у которого дверь отвернулась
+ * от дороги, зеркалится, а точка двери зеркалится вместе с ним. Вывески на
+ * домах без текста, только значки, так что зеркало безопасно.
+ */
+export function houseDoor(stopId: string, side: "left" | "right") {
+  const base = HOUSE_DOORS[stopId];
+  if (!base) return undefined;
+  const mirror = (side === "left") === (base.x < 0.5);
+  return { x: mirror ? 1 - base.x : base.x, y: base.y, mirror };
+}
+
+/**
  * Декор пути. Ширина — в базовом масштабе, поверх неё раскладка декора
  * применяет свой коэффициент глубины (0,7–1,45).
  */
 export const PROP_ASSETS = {
-  tree: asset("tree", 104),
-  pine: asset("pine", 96),
+  tree: asset("tree", 135),
+  pine: asset("pine", 125),
   bush: asset("bush", 92),
-  lamp: asset("flashlight", 62),
+  lamp: asset("flashlight", 85),
   bench: asset("bench", 128),
   fence: asset("fence", 124),
   flowerbed: asset("flowerbed", 108),

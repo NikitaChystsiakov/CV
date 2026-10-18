@@ -58,6 +58,8 @@ export type HouseCopy = {
   /** Точка двери — доля размера картинки */
   doorX: number;
   doorY: number;
+  /** Дом на маршруте отзеркален (дверь смотрит на дорогу) — копия тоже */
+  mirror?: boolean;
 };
 
 /** Геометрия наезда: откуда и куда едет дверь, во сколько раз растёт дом. */
@@ -172,7 +174,7 @@ function shownHouseSrc(trigger: HTMLElement) {
 /** Экранный прямоугольник дома → копия и траектория наезда. */
 function measure(
   trigger: HTMLElement | null,
-  door: { x: number; y: number },
+  door: { x: number; y: number; mirror?: boolean },
 ): { copy: HouseCopy; flight: Flight } | null {
   if (!trigger) return null;
   const rect = trigger.getBoundingClientRect();
@@ -197,6 +199,7 @@ function measure(
       height: round(rect.height * zoom),
       doorX: door.x,
       doorY: door.y,
+      mirror: door.mirror,
     },
     flight: {
       fromX: round(rect.left + rect.width * door.x),
@@ -208,7 +211,9 @@ function measure(
   };
 }
 
-export function useHouseEntry(door: { x: number; y: number } = DEFAULT_DOOR): HouseEntry {
+export function useHouseEntry(
+  door: { x: number; y: number; mirror?: boolean } = DEFAULT_DOOR,
+): HouseEntry {
   const [phase, setPhase] = useState<Phase>("closed");
   // Копия нужна разметке — картинка встаёт на место дома, — поэтому она в
   // состоянии. Меняется раз на вход или выход, а не на кадр: всё покадровое

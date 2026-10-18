@@ -39,6 +39,7 @@ export function SceneObject({
   priority = false,
   entry,
   entryRef,
+  mirror = false,
 }: {
   asset: SceneAsset;
   alt: string;
@@ -47,6 +48,8 @@ export function SceneObject({
   /** Куда вернуть фокус после закрытия комнаты. Отдельным параметром: ref в
       объекте компилятор React считает обращением к ref во время рендера */
   entryRef?: Ref<HTMLButtonElement>;
+  /** Отразить картинку по горизонтали: дверь дома должна смотреть на дорогу */
+  mirror?: boolean;
 }) {
   const box = { width: townSize(asset.display), maxWidth: "100%" } as const;
 
@@ -71,6 +74,7 @@ export function SceneObject({
         priority={priority}
         sizes={`(max-width: 768px) 80vw, ${asset.display}px`}
         className="scene-art h-auto w-full select-none"
+        style={mirror ? { transform: "scaleX(-1)" } : undefined}
       />
     </>
   );

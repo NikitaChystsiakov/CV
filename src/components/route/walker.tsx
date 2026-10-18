@@ -62,7 +62,7 @@ const FOCUS = 0.62;
  * прокрутке шаг не читался. 120 — вровень с верхом дверей домов (проём
  * ~105–130 базовых px, замер по ассетам): человек у двери своего роста, а не великан.
  */
-const HEIGHT = 140;
+const HEIGHT = 165;
 
 type Pose = "down" | "diag" | "up" | "upDiag";
 const POSES: Pose[] = ["down", "diag", "up", "upDiag"];

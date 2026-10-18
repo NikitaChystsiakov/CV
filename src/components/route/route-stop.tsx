@@ -21,7 +21,7 @@ import { StopTown } from "@/components/route/scenery";
 import { UI } from "@/lib/content";
 import { roomArtFor } from "@/lib/room-art";
 import { ROOM_STOP_IDS, roomFor } from "@/lib/rooms";
-import { HOUSE_DOORS, STOP_ASSETS, type SceneAsset } from "@/lib/scene-assets";
+import { STOP_ASSETS, houseDoor, type SceneAsset } from "@/lib/scene-assets";
 import { stopMarkLeft, townNodes, townSize } from "@/lib/town";
 import type { RouteStopConfig } from "@/lib/route";
 
@@ -46,7 +46,8 @@ export function RouteStop({ stop, index }: { stop: RouteStopConfig; index: numbe
   const hasRoom = ROOM_STOP_IDS.includes(stop.id) && Boolean(asset);
   // Камера входит в дверь, а не в середину картинки: точка двери у каждого
   // дома своя и снята с ассета (`HOUSE_DOORS`)
-  const entry = useHouseEntry(HOUSE_DOORS[stop.id]);
+  const door = houseDoor(stop.id, stop.side);
+  const entry = useHouseEntry(door);
   const trigger = hasRoom
     ? {
         stopId: stop.id,
@@ -134,6 +135,7 @@ export function RouteStop({ stop, index }: { stop: RouteStopConfig; index: numbe
               alt={stop.title[lang]}
               entry={trigger}
               entryRef={entry.triggerRef}
+              mirror={door?.mirror}
             />
           ) : (
             <IsoPlaceholder
@@ -316,6 +318,7 @@ function HouseEntryScene({
             decoding="sync"
             className="scene-art absolute max-w-none select-none"
             style={{
+              transform: copy.mirror ? "scaleX(-1)" : undefined,
               left: -copy.width * copy.doorX,
               top: -copy.height * copy.doorY,
               width: copy.width,
