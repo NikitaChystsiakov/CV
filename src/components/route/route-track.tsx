@@ -11,8 +11,8 @@ import { RouteStop } from "@/components/route/route-stop";
 import { SceneryLandmarks } from "@/components/route/scenery";
 import { Walker } from "@/components/route/walker";
 import { routeStops } from "@/lib/route";
-import { ROAD_WIDTH, TOWN_HALF_WIDTH, drivePaths, roadHeight, roadPath, townSize } from "@/lib/town";
 import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
+import { TOWN_HALF_WIDTH, drivePaths, roadHeight, roadPath, townSize } from "@/lib/town";
 
 /**
  * Вертикальный контейнер маршрута: дорога + остановки по порядку из конфига.
@@ -34,7 +34,7 @@ export function RouteTrack() {
     // Заход по ссылке на остановку: линия не прорисовывается от начала
     skipInitialAnimation: true,
   });
-  // Пройденная часть дороги кончается у ног персонажа: долю пишет он сам
+  // Пройденная часть серпантина кончается у ног персонажа: долю пишет он сам
   const walked = useMotionValue(0);
   useTownZoom(trackRef);
 
@@ -216,18 +216,17 @@ function TownRoad({ progress }: { progress: MotionValue<number> }) {
       className="town-zoom pointer-events-none absolute inset-y-0 left-1/2 hidden h-full -translate-x-1/2 will-change-transform md:block"
       style={{ width: townSize(TOWN_HALF_WIDTH * 2) }}
     >
-      {/* Ширина полотна — ROAD_WIDTH, 100 базовых px с 10.10.2026 (было 86,
-          до того 66 и 44): проспект — главная линия картинки, по нему идёт
-          персонаж ростом 140. Бордюр, съезды,
+      {/* Ширина полотна — 86 базовых px (было 66, до того 44): по ленте ходит
+          персонаж ростом 120, и на узкой дороге шаг не читался. Бордюр, съезды,
           разметка и пройденная линия растут в той же пропорции ×1,3. Декор
           обочины отодвинут в town.ts, чтобы не налезал на полотно.
           Бордюр тоном темнее — сначала оба, потом заливка поверх: так съезд к
           двери входит в дорогу без шва. Первой идёт сама дорога: она тянется на
           весь маршрут, и проверкам не надо угадывать, какой путь тут главный */}
-      <path d={road} className="town-kerb" style={{ strokeWidth: townSize(ROAD_WIDTH + 13) }} />
+      <path d={road} className="town-kerb" style={{ strokeWidth: townSize(99) }} />
       <path d={drives} className="town-kerb" style={{ strokeWidth: townSize(55) }} />
       <path d={drives} className="town-road" style={{ strokeWidth: townSize(44) }} />
-      <path d={road} className="town-road" style={{ strokeWidth: townSize(ROAD_WIDTH) }} />
+      <path d={road} className="town-road" style={{ strokeWidth: townSize(86) }} />
 
       {/* Разметка по осевой и пройденная часть пути поверх неё */}
       <path d={road} className="route-path" style={{ strokeWidth: townSize(6.5) }} />

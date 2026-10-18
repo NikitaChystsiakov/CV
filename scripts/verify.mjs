@@ -269,10 +269,7 @@ async function main() {
 
       // Окружение: пустота между домами была отдельной претензией владельца,
       // поэтому плотность декора и неба проверяется, а не остаётся на глаз
-      // С 10.10.2026 декора у домов меньше и он строже (решение владельца), а
-      // пустоту между домами держат фоновые кварталы — считаются вместе
-      const sceneryCount =
-        (await page.locator("[data-scenery]").count()) + (await page.locator("[data-backdrop]").count());
+      const sceneryCount = await page.locator("[data-scenery]").count();
       report("Э1", "окружение расставлено по всему маршруту", sceneryCount >= ids.length * 6, `объектов: ${sceneryCount}`);
 
       const skyCount = await page.locator("[data-sky]").count();
@@ -1047,12 +1044,6 @@ async function main() {
           landmarks.every((l) => l.art && l.drawn === 0),
         `площадки: ${landmarks.map((l) => `${l.kind}${l.art ? "" : " без ассета"}${l.drawn ? ` +${l.drawn} svg` : ""}`).join(", ") || "нет"}`,
       );
-      // Размер меряется после наезда камеры: на первом экране городок уменьшен
-      // общим планом, а площадка — нет
-      const scrolledBefore = await page.evaluate(() => window.scrollY);
-      await page.evaluate(() => window.scrollTo(0, innerHeight));
-      await page.mouse.wheel(0, 1);
-      await page.waitForTimeout(500);
       const tableRatio = await page.evaluate(() => {
         const table = document.querySelector("[data-chess-scene] img")?.getBoundingClientRect();
         const houses = [...document.querySelectorAll("[data-scene-object] img")]
@@ -1067,8 +1058,6 @@ async function main() {
         tableRatio !== null && tableRatio < 0.55,
         tableRatio !== null ? `отношение ${tableRatio.toFixed(2)}` : "нет сцены",
       );
-      await page.evaluate((y) => window.scrollTo(0, y), scrolledBefore);
-      await page.waitForTimeout(300);
 
       // Всплывашка площадки: Escape закрывает и возвращает фокус, клик мимо закрывает
       const story = page.getByRole("button", { name: /Шахматы/i });
@@ -1306,11 +1295,7 @@ async function main() {
           hasTouch: width <= 430,
         });
 
-        // Дорога: меряется один раз, после наезда камеры — на первом экране
-        // городок уменьшен общим планом и сдвинут от имени
-        await view.evaluate(() => window.scrollTo(0, innerHeight));
-        await view.mouse.wheel(0, 1);
-        await view.waitForTimeout(400);
+        // Дорога: меряется один раз, её геометрия от скролла не зависит
         const road = await view.evaluate(() => {
           const route = document.getElementById("route");
           const parts = [...document.querySelectorAll("[data-road]")];
@@ -1332,9 +1317,7 @@ async function main() {
             // Горизонтальную протяжённость меряем по самой линии, а не по
             // рамке svg: растянутая на всю ширину рамка ничего не доказывает,
             // внутри неё может лежать прямая вертикальная полоса
-            // Только главная лента — первый путь: съезды к дверям уходят вбок
-            // законно, а проверяется сама дорога
-            const paths = part.matches("path") ? [part] : [...part.querySelectorAll("path")].slice(0, 1);
+            const paths = part.matches("path") ? [part] : [...part.querySelectorAll("path")];
             for (const path of paths) {
               const ctm = typeof path.getScreenCTM === "function" ? path.getScreenCTM() : null;
               if (!ctm || typeof path.getPointAtLength !== "function") continue;
@@ -1363,7 +1346,6 @@ async function main() {
             routeHeight: Math.round(route.getBoundingClientRect().height),
             roadHeight: Math.round(bottom - top),
             spread: Math.round(right - left),
-            center: Math.round((left + right) / 2),
           };
         });
 
@@ -1381,13 +1363,11 @@ async function main() {
             road.present && road.roadHeight >= road.routeHeight * 0.9,
             road.present ? `дорога ${road.roadHeight}px из ${road.routeHeight}px маршрута` : "",
           );
-          // Серпантин снят 10.10.2026: на диагоналях персонажа уносило вбок
-          // быстрее прокрутки («телепорт»). Проспект идёт строго по осевой
           report(
             "Э4",
-            `${width}px: дорога — прямой проспект по центру экрана`,
-            road.present && road.spread <= 2 && Math.abs(road.center - width / 2) <= 2,
-            road.present ? `размах ${road.spread}px, ось на ${road.center}px из ${width / 2}` : "",
+            `${width}px: дорога идёт зигзагом, а не прямой полосой`,
+            road.present && road.spread >= width * 0.2,
+            road.present ? `размах по горизонтали ${road.spread}px, нужно ≥ ${Math.round(width * 0.2)}px` : "",
           );
         }
 
@@ -1416,11 +1396,7 @@ async function main() {
               return src.match(/\/scene\/([\w.-]+)/)?.[1] ?? src.slice(-20);
             };
 
-            // На первом экране городок уменьшен наездом камеры — это общий план,
-            // а не размер дома; там размер не меряем
-            const route0 = document.getElementById("route");
-            const zoomed = (route0?.style.getPropertyValue("--zoom-t").trim() || "none") !== "none";
-            const houseBoxes = zoomed ? [] : [...document.querySelectorAll("[data-scene-object] img")]
+            const houseBoxes = [...document.querySelectorAll("[data-scene-object] img")]
               .map((el) => el.getBoundingClientRect())
               .filter(onScreen)
               .map((r) => ({ w: Math.round(r.width), h: Math.round(r.height) }));
@@ -1644,9 +1620,6 @@ async function main() {
         [1440, 900],
       ]) {
         const view = await openPage(browser, { viewport: { width, height } });
-        // Первый замер — после наезда камеры: на общем плане сверху персонаж
-        // стоит выше по экрану, и это не «вылетел из кадра»
-        await view.evaluate(() => window.scrollTo(0, innerHeight));
         await view.mouse.wheel(0, 1);
         await view.waitForTimeout(800);
         const first = await walkerState(view);
@@ -1729,35 +1702,25 @@ async function main() {
       // Едем по маршруту мелкими шагами прокрутки и записываем, что видно
       const seen = { poses: new Set(), flipped: false, frames: new Set(), moved: 0 };
       const total = await walkProbe.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
-      // Едем колесом, как человек, а не прыжками `scrollTo`: с 30.09 у шага
-      // потолок частоты (MAX_CADENCE в walker.tsx), и прыжки по 47px раз в
-      // 24 мс он честно принимает за рывок — ноги почти не успевают сменить
-      // кадр. С 10.10.2026 полоса и вовсе одна (27 кадров, только «прямо»)
-      await walkProbe.evaluate(() => window.scrollTo(0, innerHeight));
-      await walkProbe.waitForTimeout(600);
-      for (let y = 0; y < total; y += 60) {
-        await walkProbe.mouse.wheel(0, 60);
-        await walkProbe.waitForTimeout(50);
+      for (let y = 0; y < total; y += 47) {
+        await walkProbe.evaluate((to) => window.scrollTo(0, to), y);
+        await walkProbe.mouse.wheel(0, 1);
+        await walkProbe.waitForTimeout(24);
         const now = await walkNow();
         if (now.pose) {
           seen.poses.add(now.pose);
           seen.frames.add(`${now.pose}:${frameIndex(now, now.pose)}`);
         }
-        if (now.flipped) seen.flipped = true;
+        if (now.pose === "diag" && now.flipped) seen.flipped = true;
       }
-      report(
-        "Э4",
-        "по прямому проспекту он идёт лицом к зрителю, без диагоналей",
-        seen.poses.size === 1 && seen.poses.has("down"),
-        [...seen.poses].join(", "),
-      );
+      report("Э4", "по маршруту он идёт и прямо, и по диагонали", seen.poses.has("down") && seen.poses.has("diag"), [...seen.poses].join(", "));
       report(
         "Э4",
         "в пути кадры сменяются: не одна и не две позы",
         seen.frames.size >= 20,
         `разных кадров за проезд — ${seen.frames.size}`,
       );
-      report("Э4", "персонаж не зеркалится: поворотов на проспекте нет", !seen.flipped);
+      report("Э4", "на диагонали влево персонаж зеркалится", seen.flipped);
 
       // Остановился — встал в стойку (последний кадр полосы), а не замер на шаге
       await walkProbe.waitForTimeout(1200);
@@ -1794,151 +1757,6 @@ async function main() {
       }
       report("Э4", "при reduced-motion персонаж не ходит, всегда в стойке", calmFrames.size === 1 && calmFrames.has(true), `${[...calmFrames].join(",")}`);
       await walkCalm.close();
-
-      // --- Город: проспект, кварталы и наезд камеры (10.10.2026) --------------
-      // Владелец: «дома расположены рандомно», «человечек слишком маленький,
-      // на скролле телепортируется». Улица стала прямым проспектом по центру,
-      // по краям — фоновые кварталы рядами, первый экран — общий план с
-      // наездом камеры. Ни одно из этого не видно проверкой «элемент есть»,
-      // поэтому меряется положение на экране.
-      {
-        const city = await openPage(browser, { viewport: { width: 1440, height: 900 } });
-        await city.waitForTimeout(800);
-
-        const backdrop = await city.evaluate(() => {
-          const items = [...document.querySelectorAll("[data-backdrop]")];
-          const files = new Set(items.map((el) => el.querySelector("img")?.getAttribute("src")));
-          return { count: items.length, files: [...files] };
-        });
-        report(
-          "Э4",
-          "по краям улицы стоят фоновые кварталы",
-          backdrop.count >= 60 && backdrop.files.every((src) => /\/scene\/(bg-house-1(-warm|-cool)?|tree|pine)\.webp$/.test(src ?? "")),
-          `объектов: ${backdrop.count}, файлы: ${backdrop.files.join(", ")}`,
-        );
-        const bgFile = await city.request.get(new URL("/scene/bg-house-1.webp", BASE).href);
-        report("Э4", "файл фонового дома отдаётся сервером", bgFile.ok(), `/scene/bg-house-1.webp → ${bgFile.status()}`);
-
-        // Наезд: сверху город уменьшен, через 0,8 экрана — в полный размер
-        const zoomAt = () =>
-          city.evaluate(() => {
-            const road = document.querySelector("[data-road]");
-            return {
-              screen: Math.round(road.getBoundingClientRect().width),
-              layout: road.clientWidth,
-              transform: getComputedStyle(road).transform,
-            };
-          });
-        const top = await zoomAt();
-        await city.evaluate(() => window.scrollTo(0, innerHeight * 0.8));
-        await city.mouse.wheel(0, 1);
-        await city.waitForTimeout(900);
-        const landed = await zoomAt();
-        report(
-          "Э4",
-          "первый экран — общий план: городок уменьшен",
-          top.screen < top.layout * 0.6,
-          `ширина городка ${top.screen}px из ${top.layout}px`,
-        );
-        report(
-          "Э4",
-          "после наезда камеры городок в полный размер и без трансформы",
-          landed.transform === "none" && Math.abs(landed.screen - landed.layout) <= 1,
-          `${landed.screen}px из ${landed.layout}px, transform: ${landed.transform}`,
-        );
-        await city.screenshot({ path: `${OUT}/city-landed.png` });
-
-        // Персонаж всё время на осевой: вбок не уезжает ни на одном экране
-        const total = await city.evaluate(() => document.documentElement.scrollHeight - innerHeight);
-        let drift = 0;
-        for (let y = 900 * 0.8; y < total; y += 300) {
-          await city.evaluate((to) => window.scrollTo(0, to), y);
-          await city.mouse.wheel(0, 1);
-          await city.waitForTimeout(60);
-          const dx = await city.evaluate(() => {
-            const frame = [...document.querySelectorAll("[data-walker-frame]")].find(
-              (el) => getComputedStyle(el).visibility === "visible",
-            );
-            const r = frame?.getBoundingClientRect();
-            return r ? Math.abs(r.left + r.width / 2 - innerWidth / 2) : 999;
-          });
-          drift = Math.max(drift, dx);
-        }
-        report("Э4", "персонаж не уходит с осевой: прыжков вбок нет", drift <= 2, `наибольший сдвиг ${Math.round(drift)}px`);
-        report("Э4", "город без ошибок в консоли", city.errors.length === 0, city.errors.slice(0, 2).join(" | "));
-        await city.close();
-
-        // Кварталы не заходят под текст остановок. На общем плане сверху это
-        // разрешено — там имя лежит на подложке (`--zoom-veil`), — поэтому
-        // меряется после наезда, на четырёх ширинах
-        for (const [width, height] of [
-          [1024, 768],
-          [1280, 800],
-          [1440, 900],
-          [1728, 1080],
-        ]) {
-          const view = await openPage(browser, { viewport: { width, height } });
-          const hits = new Set();
-          for (const ratio of [0.15, 0.3, 0.45, 0.6, 0.75, 0.9]) {
-            await view.evaluate((r) => window.scrollTo(0, (document.documentElement.scrollHeight - innerHeight) * r), ratio);
-            await view.mouse.wheel(0, 1);
-            await view.waitForTimeout(500);
-            const found = await view.evaluate(() => {
-              const onScreen = (r) => r.width > 1 && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth;
-              // Текст — строки, а не блоки: у блочного заголовка рамка во всю
-              // колонку, а сами буквы прижаты к дороге. Строки берём через Range.
-              // Мини-игра — целиком, её карточки и есть «текст» остановки
-              const lines = [];
-              for (const el of document.querySelectorAll("[data-stop] h1, [data-stop] h2, [data-stop] p")) {
-                if (el.closest("[data-minigame]")) continue;
-                const range = document.createRange();
-                range.selectNodeContents(el);
-                for (const rect of range.getClientRects()) if (onScreen(rect)) lines.push({ rect, text: (el.textContent ?? "").slice(0, 24) });
-              }
-              for (const el of document.querySelectorAll("[data-minigame]")) {
-                const rect = el.getBoundingClientRect();
-                if (onScreen(rect)) lines.push({ rect, text: "мини-игра" });
-              }
-              const out = [];
-              for (const item of document.querySelectorAll("[data-backdrop] img")) {
-                const b = item.getBoundingClientRect();
-                if (!onScreen(b)) continue;
-                // Прозрачная рамка у картинки шире дома: берём середину
-                const core = { left: b.left + b.width * 0.2, right: b.right - b.width * 0.2, top: b.top + b.height * 0.15, bottom: b.bottom - b.height * 0.1 };
-                for (const { rect, text } of lines) {
-                  const w = Math.min(core.right, rect.right) - Math.max(core.left, rect.left);
-                  const h = Math.min(core.bottom, rect.bottom) - Math.max(core.top, rect.top);
-                  if (w > 4 && h > 4) out.push(`«${text}»`);
-                }
-              }
-              return out;
-            });
-            found.forEach((hit) => hits.add(hit));
-          }
-          report(
-            "Э4",
-            `${width}px: фоновые кварталы не заходят под текст`,
-            hits.size === 0,
-            hits.size === 0 ? "" : [...hits].slice(0, 4).join("; "),
-          );
-          await view.close();
-        }
-
-        // reduced-motion: наезда нет, город сразу в полный размер
-        const calm = await openPage(browser, { viewport: { width: 1440, height: 900 }, reducedMotion: "reduce" });
-        await calm.waitForTimeout(600);
-        const calmRoad = await calm.evaluate(() => {
-          const road = document.querySelector("[data-road]");
-          return { screen: Math.round(road.getBoundingClientRect().width), layout: road.clientWidth };
-        });
-        report(
-          "Э4",
-          "при reduced-motion наезда камеры нет",
-          Math.abs(calmRoad.screen - calmRoad.layout) <= 1,
-          `${calmRoad.screen}px из ${calmRoad.layout}px`,
-        );
-        await calm.close();
-      }
     }
 
     // --- Э5: интерьер-комната ------------------------------------------------
@@ -3202,10 +3020,7 @@ async function main() {
         const house = [...stop.querySelectorAll("[data-scene-object] img")]
           .map((el) => el.getBoundingClientRect())
           .find((r) => r.width > 0);
-        // Кромка проспекта: от 768 зарубки нет (она стояла бы по персонажу),
-        // поэтому край дороги — осевая минус половина бордюра
-        const kerb = document.querySelector("[data-road] path");
-        const mark = { left: innerWidth / 2 - parseFloat(getComputedStyle(kerb).strokeWidth) / 2 };
+        const mark = stop.querySelector(".stop-mark").getBoundingClientRect();
         const board = document.querySelector(".minigame-board").getBoundingClientRect();
         const hits = (a, b) => a && b && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
         return {

@@ -18,7 +18,7 @@ const FORWARD = new Set(["down", "diag"]);
 const BACK = new Set(["up", "upDiag"]);
 
 /** Рост стоящего персонажа в базовых пикселях городка — walker.tsx, HEIGHT. */
-const HEIGHT = 140;
+const HEIGHT = 120;
 /** Потолок частоты шага — walker.tsx, MAX_CADENCE, циклов в секунду. */
 const MAX_CADENCE = 2;
 

@@ -78,157 +78,335 @@ type TownStop = {
 };
 
 /**
- * Улица — прямой проспект по осевой линии экрана (решение 10.10.2026).
+ * Дорога внутри остановки, канонический вид (дом справа).
  *
- * Серпантин снят: дорога гуляла от трети до двух третей ширины, а персонаж
- * стоит на фиксированной высоте экрана, поэтому на диагоналях его уносило
- * вбок в 1,7 раза быстрее прокрутки — владелец видел это как «телепорт».
- * Теперь полотно идёт строго вниз (равный ход по u и v, x = 0), персонаж
- * всегда в центре, а главные дома стоят у обочины попеременно слева и справа.
- * Экранная вертикаль в изометрии — диагональ сетки, поэтому к проспекту дома
- * повёрнуты углом, как раньше на прямых участках серпантина.
- *
- * Полуширина полотна — 50 базовых px (≈ 2,3 клетки).
+ * Полотно уходит к дому диагональю 30° (чистый +u), идёт вдоль него вниз и
+ * такой же диагональю (чистый +v) уходит к следующей остановке. Поперечная
+ * координата на стыке — среднее между обочинами соседних остановок
+ * (`seamX`): когда дома по разные стороны, шов приходится на осевую и дорога
+ * честно переваливает через неё; когда два дома подряд стоят с одной стороны,
+ * дорога просто идёт мимо них, а не втыкается иглой в середину и обратно.
  */
-export const ROAD_WIDTH = 100;
+const ROAD_SIDE = 10; // обочина: 10 клеток от осевой
+const ROAD_TURN = 10; // на какой глубине полотно уже вышло на обочину
 
 /**
- * Места, которые повторяются от остановки к остановке, — относительно дома у
- * обочины (дом на клетке (14, 40)). Это прежняя раскладка, сдвинутая вместе с
- * домом к проспекту на (−8, −1): взаимное положение, на котором проверялось
- * непересечение картинок, сохранено.
+ * Места, которые повторяются от остановки к остановке. Держать их в одном
+ * месте важнее красоты таблицы: под домом и текстом ставить нельзя, а
+ * свободных полос немного — перед домом, за домом, обочина со стороны текста
+ * и полоса между осевой и полотном.
  *
- * F — палисадник перед домом; B — сад за домом, выше его крыши.
+ * Раскладка собрана «участками», а не поштучно (блок «город, а не выставка
+ * предметов»): плотнее у дома, воздух у текста.
+ *
+ * F — палисадник перед домом (дом кончается на d = 41, поэтому объект не
+ *     должен доставать до него верхушкой: чем выше объект, тем больше d);
+ * B — сад за домом, выше его крыши;
+ * C — ближняя обочина, между осевой линией и полотном (полотно с 29.09.2026
+ *     шире — 86 базовых px, его кромка на x ≈ 8, поэтому C стоит на x = 4);
+ * S — сквер на стороне текста над колонкой (d 2–14),
+ * Q — сквер на стороне текста под колонкой (d 44–56). Колонка текста стоит
+ *     по центру остановки, d ≈ 20–38.
  *
  * Лавочка у ассета смотрит сиденьем влево-вниз. Левее дороги её зеркалят
  * (`flip`), чтобы она смотрела на дорогу, а не спинкой к ней.
  */
-const HOUSE: Cell = { x: 14, d: 40 };
-const F1: Cell = { x: 6, d: 48 };
-const F3: Cell = { x: 21, d: 48 };
-const F4: Cell = { x: 10, d: 45 }; // только для низких объектов (урна)
-const B1: Cell = { x: 8, d: 4 };
-const B2: Cell = { x: 19, d: 5 };
+const F1: Cell = { x: 14, d: 49 };
+const F2: Cell = { x: 22, d: 51 };
+const F3: Cell = { x: 29, d: 49 };
+const F4: Cell = { x: 18, d: 46 }; // только для низких объектов (урна)
+// Угол участка у внешнего края: правее дома на клетку, чтобы крона не
+// заходила на цоколь. Только от 1280 (`wide`)
+const F5 = { x: 35, d: 47, wide: true } as const;
+const B1: Cell = { x: 16, d: 5 };
+const B2: Cell = { x: 27, d: 6 };
+const B3 = { x: 33, d: 12, wide: true } as const;
+const C1: Cell = { x: 4, d: 16 };
+const C2: Cell = { x: 4, d: 30 };
+const S1: Cell = { x: -9, d: 6 };
+const S2: Cell = { x: -16, d: 9 };
+const S3: Cell = { x: -25, d: 5 };
+const S4 = { x: -30, d: 13, wide: true } as const;
+const Q1: Cell = { x: -10, d: 50 };
+const Q2: Cell = { x: -18, d: 54 };
+const Q3: Cell = { x: -26, d: 48 };
+const Q4 = { x: -31, d: 55, wide: true } as const;
 
 /**
- * Дорожка к дому: от обочины перпендикулярно левой грани цоколя и под дом —
- * конец прячется под картинкой (без «сосиски» у цоколя). Та же, что была при
- * доме на (22, 41), сдвинутая вместе с ним.
+ * Дорожка к дому: от полотна вверх-вправо, перпендикулярно левой грани цоколя,
+ * и уходит под дом — конец прячется под картинкой. Прежняя шла параллельно
+ * грани в двух клетках перед ней, под дом не заходила, и её скруглённый конец
+ * торчал у цоколя «сосиской». Грань цоколя — линия d − x = 19 (от угла
+ * (11,5; 30,5) до основания (22; 41)); конечная точка (15; 32) — уже за ней.
  */
 const DRIVE: [Cell, Cell] = [
-  { x: 2, d: 36 },
-  { x: 7, d: 31 },
+  { x: 10, d: 37 },
+  { x: 15, d: 32 },
 ];
 
 /**
- * Фонари — парой по обеим обочинам на стыке остановок. Единственный декор
- * «по правилу»: строгий ритм вдоль проспекта держит улицу, а на уровне текста
- * фонарей нет — стык приходится на промежуток между остановками.
- */
-const LAMP_X = 4.5;
-const LAMP_D = 56;
-
-/**
- * Улица по остановкам. Владелец попросил «меньше и строже» (10.10.2026): у
- * дома два-три предмета вплотную к нему, без одиночных предметов посреди поля.
- * Пустоту между домами держат фоновые кварталы (`src/lib/backdrop.ts`).
+ * Улица по остановкам — таблица из docs/город.md, раздел 3.
  *
  * Ключи совпадают с id в route.ts. Остановки без записи (черновая развилка)
  * на маршрут не выходят.
  */
 const TOWN: Record<string, TownStop> = {
-  // Арка на входе: клумбы у столбов, дерево за аркой
+  // Арка на входе: два фонаря по бокам, клумбы у столбов, урна у дорожки;
+  // напротив — сквер с лавочкой, откуда начинается прогулка
   hero: {
-    house: HOUSE,
+    house: { x: 22, d: 41 },
     drive: DRIVE,
     props: [
-      { ...F1, name: "flowerbed" },
-      { ...F3, name: "flowerbed" },
+      { ...F1, name: "lamp" },
+      { ...F3, name: "lamp", flip: true },
+      { ...F2, name: "flowerbed" },
+      { ...F4, name: "trash" },
+      { ...F5, name: "bush" },
       { ...B2, name: "tree", back: true },
+      { ...B3, name: "pine", back: true },
+      { ...Q1, name: "flowerbed" },
+      { ...Q2, name: "bench", flip: true },
+      { ...Q3, name: "tree", back: true },
+      { ...Q4, name: "bush" },
     ],
   },
 
-  // Дом навыков: клумба у входа, куст, дерево за домом
+  // Дом навыков: клумба у входа, лавочка лицом к дороге, сад за домом;
+  // напротив, над текстом — сквер с деревьями
   skills: {
-    house: HOUSE,
+    house: { x: 22, d: 41 },
     drive: DRIVE,
     props: [
       { ...F1, name: "flowerbed" },
-      { ...F3, name: "bush" },
-      { ...B2, name: "tree", back: true },
-    ],
-  },
-
-  // Мини-игра: забор за верстаком, куст, урна у стола
-  minigame: {
-    house: HOUSE,
-    drive: DRIVE,
-    props: [
-      { x: 9, d: 12, name: "fence", back: true },
-      { x: 18, d: 13, name: "fence", back: true },
-      { ...F4, name: "trash" },
-      { ...F3, name: "bush" },
-    ],
-  },
-
-  // Дом технологий: ель за домом, клумба у входа, куст
-  tech: {
-    house: HOUSE,
-    drive: DRIVE,
-    props: [
-      { ...F1, name: "flowerbed" },
-      { ...F3, name: "bush" },
-      { ...B2, name: "pine", back: true },
-    ],
-  },
-
-  // Дом кейсов: две клумбы галереей, дерево за домом
-  cases: {
-    house: HOUSE,
-    drive: DRIVE,
-    props: [
-      { ...F1, name: "flowerbed" },
-      { ...F3, name: "flowerbed" },
-      { ...B2, name: "tree", back: true },
-    ],
-  },
-
-  // Дом опыта: напротив, через проспект, — сквер с шахматным столом
-  // (landmark-spots.ts)
-  experience: {
-    house: HOUSE,
-    drive: DRIVE,
-    props: [
-      { ...F1, name: "flowerbed" },
-      { ...F3, name: "bush" },
-      { ...B2, name: "tree", back: true },
-    ],
-  },
-
-  // Дом «о себе»: жилой и спокойный — клумба, лавочка, урна, дерево. Низ
-  // стороны дома отдан волейбольной площадке (landmark-spots.ts)
-  about: {
-    house: HOUSE,
-    drive: DRIVE,
-    props: [
-      { ...F1, name: "flowerbed" },
-      { ...F4, name: "trash" },
-      { ...F3, name: "bench" },
-      { ...B2, name: "tree", back: true },
-    ],
-  },
-
-  // Финиш: клумбы парой, куст за площадкой — дальше пусто
-  outro: {
-    house: HOUSE,
-    drive: DRIVE,
-    props: [
-      { ...F1, name: "flowerbed" },
-      { ...F3, name: "flowerbed" },
+      { ...F2, name: "bush" },
+      { ...F3, name: "lamp" },
+      { ...F5, name: "tree", back: true },
+      { ...C2, name: "bench", flip: true },
       { ...B1, name: "bush", back: true },
+      { ...B2, name: "tree", back: true },
+      { ...S2, name: "flowerbed" },
+      { ...S3, name: "tree", back: true },
+      { ...S4, name: "bush" },
+      { ...Q2, name: "lamp" },
+      { ...Q3, name: "flowerbed" },
+    ],
+  },
+
+  // Мини-игра: мастерская под открытым небом — забор за верстаком, фонарь,
+  // урна у стола; напротив — лавочка для зрителей
+  minigame: {
+    house: { x: 22, d: 41 },
+    drive: DRIVE,
+    props: [
+      { x: 17, d: 13, name: "fence", back: true },
+      { x: 26, d: 14, name: "fence", back: true },
+      { x: 34, d: 20, name: "tree", back: true, wide: true },
+      { ...F1, name: "lamp" },
+      { ...F4, name: "trash" },
+      { ...F3, name: "bush" },
+      { ...F5, name: "flowerbed" },
+      { ...C2, name: "bench", flip: true },
+      { ...S3, name: "pine", back: true },
+      { ...Q1, name: "bush" },
+      { ...Q3, name: "tree", back: true },
+    ],
+  },
+
+  // Дом технологий: фонарь у двери, ели за домом, клумба; сквер над текстом
+  tech: {
+    house: { x: 22, d: 41 },
+    drive: DRIVE,
+    props: [
+      { ...F1, name: "lamp" },
+      { ...F2, name: "flowerbed" },
+      { ...F3, name: "bush" },
+      { ...F5, name: "lamp", flip: true },
+      { ...C2, name: "bench", flip: true },
+      { ...B1, name: "pine", back: true },
+      { ...B2, name: "pine", back: true },
+      { ...S1, name: "bush" },
+      { ...S2, name: "bench", flip: true },
+      { ...S4, name: "tree", back: true },
+      { ...Q2, name: "flowerbed" },
+      { ...Q4, name: "tree", back: true },
+    ],
+  },
+
+  // Дом кейсов: две клумбы галереей, лавочка напротив через дорогу — лицом
+  // к дому, как у входа в музей
+  cases: {
+    house: { x: 22, d: 41 },
+    drive: DRIVE,
+    props: [
+      { ...F1, name: "flowerbed" },
+      { ...F2, name: "flowerbed" },
+      { ...F3, name: "lamp" },
+      { ...F5, name: "bush" },
+      { ...C2, name: "bench", flip: true },
+      { ...B2, name: "tree", back: true },
+      // Галерея шире и выше остальных домов — дерево на клетку дальше B3
+      { x: 36, d: 10, name: "tree", back: true, wide: true },
+      { ...S2, name: "tree", back: true },
+      { ...S3, name: "flowerbed" },
+      { ...Q1, name: "bush", back: true },
+      { ...Q2, name: "lamp" },
+      { ...Q4, name: "tree", back: true },
+    ],
+  },
+
+  // Дом опыта: напротив сквер с шахматным столом (landmark-spots.ts),
+  // поэтому низ у стороны текста занят — декор уходит выше
+  experience: {
+    house: { x: 22, d: 41 },
+    drive: DRIVE,
+    props: [
+      { ...S2, name: "tree", back: true },
+      { ...S1, name: "bench", flip: true },
+      { ...S4, name: "flowerbed" },
+      { ...F1, name: "lamp" },
+      { ...F2, name: "flowerbed" },
+      { ...F3, name: "bush" },
+      { ...F5, name: "tree", back: true },
+      { ...B2, name: "tree", back: true },
+      { ...C1, name: "bush", back: true },
+    ],
+  },
+
+  // Дом «о себе»: жилой и спокойный — клумбы, лавочка, дерево, урна. Низ
+  // стороны текста отдан волейбольной площадке (landmark-spots.ts)
+  about: {
+    house: { x: 22, d: 41 },
+    drive: DRIVE,
+    props: [
+      { ...F1, name: "flowerbed" },
+      { ...F2, name: "flowerbed" },
+      { ...F4, name: "trash" },
+      { ...F5, name: "tree", back: true },
+      { ...C2, name: "bench", flip: true },
+      { ...B1, name: "bush", back: true },
+      { ...B2, name: "tree", back: true },
+      { ...S1, name: "lamp" },
+      { ...S3, name: "tree", back: true },
+      { ...S2, name: "flowerbed" },
+      { ...Q1, name: "lamp" },
+    ],
+  },
+
+  // Финиш: фонари парой, дальше пусто — за финишем ничего нет
+  outro: {
+    house: { x: 22, d: 41 },
+    drive: DRIVE,
+    props: [
+      { ...F1, name: "lamp" },
+      { ...F3, name: "lamp", flip: true },
+      { ...F2, name: "flowerbed" },
+      { ...C2, name: "bench", flip: true },
+      { ...B1, name: "bush", back: true },
+      { ...B3, name: "tree", back: true },
+      { ...S2, name: "tree", back: true },
+      { ...S3, name: "bush" },
+      { ...Q2, name: "flowerbed" },
     ],
   },
 };
+
+/**
+ * Декор между остановками — единственное место, где объекты ставятся по
+ * правилу, а не поимённо (docs/город.md, раздел 3): фонари вдоль полотна с
+ * постоянным шагом и дерево на стыке остановок. Шаг переведён в глубину
+ * остановки: 30 клеток — примерно 220px улицы при опорном окне.
+ */
+const ROADSIDE: TownProp[] = [
+  { x: 4, d: 14, name: "lamp" },
+  { x: 4, d: 44, name: "lamp" },
+  { x: -7, d: 56, name: "tree", back: true },
+];
+
+/**
+ * Фоновые кварталы: ряды жилых домов по внешним краям улицы, за домами
+ * маршрута. Они мельче, бледнее и тоньше по тону, чем главные дома: это
+ * задник, который превращает улицу из выставки предметов в город, а не ещё
+ * один дом, спорящий с текстом.
+ *
+ * Канонический вид тот же — «дом маршрута справа». Справа ряд стоит за его
+ * домом (главный дом перекрывает задник на полкорпуса), слева — у внешнего
+ * края, дальше колонки текста. На узких окнах (768–1024) крайние дома
+ * срезаны краем экрана — ряд уходит за кадр, как настоящая улица.
+ *
+ * Чтобы повтор одного ассета не читался, у каждого дома свои зеркало, тон
+ * (`tone` — вариант файла, запечённый конвейером) и масштаб, а от остановки к
+ * остановке ряд сдвигается (`backdropNodes`).
+ */
+type TownBackdrop = Cell & {
+  flip?: boolean;
+  /** Сдвиг тона: 0 — как есть, 1 — теплее, 2 — холоднее и светлее */
+  tone: 0 | 1 | 2;
+  /** Доля от базовой ширины фонового дома */
+  scale: number;
+};
+
+const BACKDROP: TownBackdrop[] = [
+  // За домом маршрута: выглядывают из-за крыши и у внешнего края
+  { x: 31, d: 3, tone: 2, scale: 0.82 },
+  { x: 38, d: 17, tone: 0, scale: 0.94, flip: true },
+  { x: 37, d: 36, tone: 1, scale: 1 },
+  { x: 39, d: 54, tone: 2, scale: 0.9, flip: true },
+  // Сторона текста: за колонкой, у внешнего края
+  { x: -37, d: 9, tone: 1, scale: 0.9, flip: true },
+  { x: -39, d: 30, tone: 2, scale: 0.86 },
+  { x: -36, d: 50, tone: 0, scale: 0.96, flip: true },
+];
+
+/** Базовая ширина фонового дома, базовые px: половина дома маршрута (460). */
+export const BACKDROP_WIDTH = 232;
+
+/** Фоновый дом на экране: координаты — уже для всего маршрута. */
+export type BackdropNode = {
+  key: string;
+  /** Смещение основания от осевой, базовые px */
+  left: number;
+  /** Доля высоты всего маршрута, проценты */
+  top: number;
+  flip: boolean;
+  tone: 0 | 1 | 2;
+  scale: number;
+};
+
+/**
+ * Все фоновые дома маршрута, от дальних к ближним. Ряд от остановки к
+ * остановке чуть сдвигается и меняет зеркало: одинаковая раскладка на каждой
+ * остановке читалась бы как обои.
+ */
+export function backdropNodes(): BackdropNode[] {
+  const nodes: BackdropNode[] = [];
+  routeStops.forEach((stop, index) => {
+    if (!TOWN[stop.id]) return;
+    const dir = directionOf(index);
+    // Сдвиг по остановке: детерминированный, одинаковый на сервере и клиенте
+    const shift = ((index * 5) % 7) - 3;
+    BACKDROP.forEach((item, n) => {
+      const d = Math.min(Math.max(item.d + shift, 1), STOP_DEPTH - 1);
+      const left = cellLeft((item.x + (n % 2 === 0 ? 0 : shift / 3)) * dir);
+      const top = round(((index + d / STOP_DEPTH) / routeStops.length) * 100);
+      // Площадки у дороги (шахматы, волейбол) стоят на своём месте, задник уступает
+      if (insideKeepOut(top, left, { top: 2.4, left: 300 })) return;
+      nodes.push({
+        key: `${stop.id}-backdrop-${n}`,
+        left,
+        top,
+        flip: dir < 0 ? !item.flip : Boolean(item.flip),
+        tone: ((item.tone + index) % 3) as 0 | 1 | 2,
+        scale: item.scale,
+      });
+    });
+  });
+  return nodes.sort((a, b) => a.top - b.top);
+}
+
+/** Насколько близко к ручному объекту считается «то же место». */
+function collides(a: Cell, b: Cell) {
+  return Math.abs(a.x - b.x) < 7 && Math.abs(a.d - b.d) < 10;
+}
 
 /** Узел городка на экране: уже с учётом стороны остановки и масштаба. */
 export type TownNode = {
@@ -282,11 +460,8 @@ export function townNodes(stopIndex: number): TownNode[] {
   if (!stop || !map) return [];
 
   const dir = directionOf(stopIndex);
-  // Пара фонарей на стыке: симметрична, поэтому зеркало ей безразлично
-  const lamps: TownProp[] = [
-    { x: LAMP_X * dir, d: LAMP_D, name: "lamp" },
-    { x: -LAMP_X * dir, d: LAMP_D, name: "lamp", flip: true },
-  ];
+  const hand = map.props;
+  const roadside = ROADSIDE.filter((item) => !hand.some((prop) => collides(prop, item)));
 
   const nodes: TownNode[] = [
     {
@@ -303,7 +478,7 @@ export function townNodes(stopIndex: number): TownNode[] {
     },
   ];
 
-  [...map.props, ...lamps].forEach((prop, index) => {
+  [...hand, ...roadside].forEach((prop, index) => {
     const left = cellLeft(prop.x * dir);
     const top = depthTop(prop.d);
 
@@ -350,22 +525,53 @@ function pathFrom(points: Cell[], stopIndex: number, dir: number) {
     .join(" ");
 }
 
-/** Проспект от арки до финиша: одна прямая по осевой. */
+/** Поперечная координата шва между остановками, в клетках без зеркала. */
+function seamX(stopIndex: number) {
+  const here = directionOf(stopIndex);
+  const next = stopIndex + 1 < routeStops.length ? directionOf(stopIndex + 1) : here;
+  // Начало маршрута и его конец приходят на осевую: дорога уходит за край
+  if (stopIndex + 1 >= routeStops.length) return 0;
+  return ((ROAD_SIDE * here + ROAD_SIDE * next) / 2) * here;
+}
+
+/** Непрерывная лента от арки до финиша. */
 export function roadPath() {
-  const x = round(TOWN_HALF_WIDTH);
-  return `M${x} 0 L${x} ${roadHeight()}`;
+  const start = `M${round(TOWN_HALF_WIDTH)} 0`;
+
+  const line = routeStops
+    .map((_, index) => {
+      const dir = directionOf(index);
+      const points: Cell[] = [
+        { x: ROAD_SIDE, d: ROAD_TURN },
+        { x: ROAD_SIDE, d: STOP_DEPTH - ROAD_TURN },
+        { x: seamX(index), d: STOP_DEPTH },
+      ];
+      return pathFrom(points, index, dir).replace("M", "L");
+    })
+    .join(" ");
+
+  return `${start} ${line}`;
 }
 
 /**
  * Вершины той же ленты, что рисует `roadPath`, — для того, кто по ней ходит.
  * `x` — базовые пиксели от осевой (на экране умножаются на `--town-unit`),
- * `y` — единицы глубины пути (`roadHeight()` на всю высоту маршрута).
+ * `y` — единицы глубины пути (`roadHeight()` на всю высоту маршрута). Лента
+ * монотонна по `y`: персонаж находит своё место на ней по высоте экрана.
  */
 export function roadVertices() {
-  return [
-    { x: 0, y: 0 },
-    { x: 0, y: roadHeight() },
-  ];
+  const vertices = [{ x: 0, y: 0 }];
+  routeStops.forEach((_, index) => {
+    const dir = directionOf(index);
+    for (const point of [
+      { x: ROAD_SIDE, d: ROAD_TURN },
+      { x: ROAD_SIDE, d: STOP_DEPTH - ROAD_TURN },
+      { x: seamX(index), d: STOP_DEPTH },
+    ]) {
+      vertices.push({ x: round(point.x * dir * CELL_PX), y: round(index * STOP_DEPTH + point.d) });
+    }
+  });
+  return vertices;
 }
 
 /** Короткие дорожки к дверям — отдельным путём, чтобы не ломать прогресс. */
@@ -385,9 +591,9 @@ export function roadHeight() {
   return routeStops.length * STOP_DEPTH;
 }
 
-/** Зарубка остановки сидит на осевой проспекта. */
-export function stopMarkLeft() {
-  return 0;
+/** Где дорога пересекает середину остановки — туда садится её зарубка. */
+export function stopMarkLeft(stopIndex: number) {
+  return cellLeft(ROAD_SIDE * directionOf(stopIndex));
 }
 
 /**

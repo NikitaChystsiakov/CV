@@ -98,16 +98,15 @@ export function RouteStop({ stop, index }: { stop: RouteStopConfig; index: numbe
         />
       ) : null}
 
-      {/* Зарубка остановки на дорожке. От 768px её нет: на прямом проспекте
-          она стояла бы на осевой и проезжала по персонажу, а отметку «ты здесь»
-          там и так держит он сам. Остаётся на прямой дороге узкого экрана.
-          Без номера — нумерация живёт только в списке остановок */}
+      {/* Зарубка остановки на дорожке: сидит на полотне дороги там, где оно
+          проходит мимо дома. Без номера — нумерация живёт только в списке
+          остановок на узких экранах, а здесь в Э4 зарубку сменит персонаж */}
       <span
         aria-hidden
-        className="stop-mark absolute left-6 top-1/2 md:left-[calc(50%+var(--stop-mark-x,0px))] md:hidden z-10 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-line bg-surface"
+        className="stop-mark absolute left-6 top-1/2 md:left-[calc(50%+var(--stop-mark-x,0px))] z-10 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-line bg-surface"
         style={
           {
-            "--stop-mark-x": townSize(stopMarkLeft()),
+            "--stop-mark-x": townSize(stopMarkLeft(index)),
             ...(isFork
               ? {
                   borderColor:
@@ -152,8 +151,8 @@ export function RouteStop({ stop, index }: { stop: RouteStopConfig; index: numbe
           // декор и задник городка идут фоном, заголовок и абзац не теряются
           className={
             textOnRight
-              ? "stop-copy relative md:col-start-2 md:pl-10 md:text-left rail-safe"
-              : "stop-copy relative md:col-start-1 md:row-start-1 md:pr-10 md:text-right"
+              ? "stop-copy relative md:col-start-2 md:pl-8 md:text-left rail-safe"
+              : "stop-copy relative md:col-start-1 md:row-start-1 md:pr-8 md:text-right"
           }
         >
           {isHero ? (
@@ -184,7 +183,7 @@ export function RouteStop({ stop, index }: { stop: RouteStopConfig; index: numbe
           {stop.id === "minigame" ? (
             <Minigame />
           ) : (
-            <p className="mt-4 max-w-[30rem] text-pretty text-muted md:inline-block">
+            <p className="mt-4 max-w-prose text-pretty text-muted md:inline-block">
               {stop.summary[lang]}
             </p>
           )}
