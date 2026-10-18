@@ -65,7 +65,7 @@ export function RouteStop({ stop, index }: { stop: RouteStopConfig; index: numbe
       // копия, а сам дом прячется (globals.css): иначе под копией оставался бы
       // его тусклый двойник
       data-house-away={entry.copy ? "" : undefined}
-      className="relative flex min-h-[82svh] items-center py-16"
+      className="relative flex min-h-[82svh] items-center md:min-h-[106svh] py-16"
     >
       {/* Городок по карте: дом и декор на клетках изосетки. От 768px — вместо
           дома в колонке, поэтому ниже рисуется свой, обычным потоком */}

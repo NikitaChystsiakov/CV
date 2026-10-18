@@ -21,7 +21,7 @@ export function SmoothScroll({ children }: { children: ReactNode }) {
       root
       options={{
         lerp: 0.09,
-        wheelMultiplier: 1,
+        wheelMultiplier: 0.6,
         touchMultiplier: 1.6,
         smoothWheel: true,
       }}
