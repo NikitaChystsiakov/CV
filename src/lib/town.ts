@@ -111,6 +111,8 @@ const ROAD_TURN = 10; // на какой глубине полотно уже в
  * Лавочка у ассета смотрит сиденьем влево-вниз. Левее дороги её зеркалят
  * (`flip`), чтобы она смотрела на дорогу, а не спинкой к ней.
  */
+// Слоты ждут расстановки: декор снят 18.10.2026, возвращается по одному
+/* eslint-disable @typescript-eslint/no-unused-vars */
 const F1: Cell = { x: 14, d: 49 };
 const F2: Cell = { x: 22, d: 51 };
 const F3: Cell = { x: 29, d: 49 };
@@ -131,6 +133,7 @@ const Q1: Cell = { x: -10, d: 50 };
 const Q2: Cell = { x: -18, d: 54 };
 const Q3: Cell = { x: -26, d: 48 };
 const Q4 = { x: -31, d: 55, wide: true } as const;
+/* eslint-enable @typescript-eslint/no-unused-vars */
 
 /**
  * Дорожка к дому: от полотна вверх-вправо, перпендикулярно левой грани цоколя,
@@ -156,19 +159,7 @@ const TOWN: Record<string, TownStop> = {
   hero: {
     house: { x: 22, d: 41 },
     drive: DRIVE,
-    props: [
-      { ...F1, name: "lamp" },
-      { ...F3, name: "lamp", flip: true },
-      { ...F2, name: "flowerbed" },
-      { ...F4, name: "trash" },
-      { ...F5, name: "bush" },
-      { ...B2, name: "tree", back: true },
-      { ...B3, name: "pine", back: true },
-      { ...Q1, name: "flowerbed" },
-      { ...Q2, name: "bench", flip: true },
-      { ...Q3, name: "tree", back: true },
-      { ...Q4, name: "bush" },
-    ],
+    props: [],
   },
 
   // Дом навыков: клумба у входа, лавочка лицом к дороге, сад за домом;
@@ -176,20 +167,7 @@ const TOWN: Record<string, TownStop> = {
   skills: {
     house: { x: 22, d: 41 },
     drive: DRIVE,
-    props: [
-      { ...F1, name: "flowerbed" },
-      { ...F2, name: "bush" },
-      { ...F3, name: "lamp" },
-      { ...F5, name: "tree", back: true },
-      { ...C2, name: "bench", flip: true },
-      { ...B1, name: "bush", back: true },
-      { ...B2, name: "tree", back: true },
-      { ...S2, name: "flowerbed" },
-      { ...S3, name: "tree", back: true },
-      { ...S4, name: "bush" },
-      { ...Q2, name: "lamp" },
-      { ...Q3, name: "flowerbed" },
-    ],
+    props: [],
   },
 
   // Мини-игра: мастерская под открытым небом — забор за верстаком, фонарь,
@@ -197,39 +175,14 @@ const TOWN: Record<string, TownStop> = {
   minigame: {
     house: { x: 22, d: 41 },
     drive: DRIVE,
-    props: [
-      { x: 17, d: 13, name: "fence", back: true },
-      { x: 26, d: 14, name: "fence", back: true },
-      { x: 34, d: 20, name: "tree", back: true, wide: true },
-      { ...F1, name: "lamp" },
-      { ...F4, name: "trash" },
-      { ...F3, name: "bush" },
-      { ...F5, name: "flowerbed" },
-      { ...C2, name: "bench", flip: true },
-      { ...S3, name: "pine", back: true },
-      { ...Q1, name: "bush" },
-      { ...Q3, name: "tree", back: true },
-    ],
+    props: [],
   },
 
   // Дом технологий: фонарь у двери, ели за домом, клумба; сквер над текстом
   tech: {
     house: { x: 22, d: 41 },
     drive: DRIVE,
-    props: [
-      { ...F1, name: "lamp" },
-      { ...F2, name: "flowerbed" },
-      { ...F3, name: "bush" },
-      { ...F5, name: "lamp", flip: true },
-      { ...C2, name: "bench", flip: true },
-      { ...B1, name: "pine", back: true },
-      { ...B2, name: "pine", back: true },
-      { ...S1, name: "bush" },
-      { ...S2, name: "bench", flip: true },
-      { ...S4, name: "tree", back: true },
-      { ...Q2, name: "flowerbed" },
-      { ...Q4, name: "tree", back: true },
-    ],
+    props: [],
   },
 
   // Дом кейсов: две клумбы галереей, лавочка напротив через дорогу — лицом
@@ -237,21 +190,7 @@ const TOWN: Record<string, TownStop> = {
   cases: {
     house: { x: 22, d: 41 },
     drive: DRIVE,
-    props: [
-      { ...F1, name: "flowerbed" },
-      { ...F2, name: "flowerbed" },
-      { ...F3, name: "lamp" },
-      { ...F5, name: "bush" },
-      { ...C2, name: "bench", flip: true },
-      { ...B2, name: "tree", back: true },
-      // Галерея шире и выше остальных домов — дерево на клетку дальше B3
-      { x: 36, d: 10, name: "tree", back: true, wide: true },
-      { ...S2, name: "tree", back: true },
-      { ...S3, name: "flowerbed" },
-      { ...Q1, name: "bush", back: true },
-      { ...Q2, name: "lamp" },
-      { ...Q4, name: "tree", back: true },
-    ],
+    props: [],
   },
 
   // Дом опыта: напротив сквер с шахматным столом (landmark-spots.ts),
@@ -259,17 +198,7 @@ const TOWN: Record<string, TownStop> = {
   experience: {
     house: { x: 22, d: 41 },
     drive: DRIVE,
-    props: [
-      { ...S2, name: "tree", back: true },
-      { ...S1, name: "bench", flip: true },
-      { ...S4, name: "flowerbed" },
-      { ...F1, name: "lamp" },
-      { ...F2, name: "flowerbed" },
-      { ...F3, name: "bush" },
-      { ...F5, name: "tree", back: true },
-      { ...B2, name: "tree", back: true },
-      { ...C1, name: "bush", back: true },
-    ],
+    props: [],
   },
 
   // Дом «о себе»: жилой и спокойный — клумбы, лавочка, дерево, урна. Низ
@@ -277,36 +206,14 @@ const TOWN: Record<string, TownStop> = {
   about: {
     house: { x: 22, d: 41 },
     drive: DRIVE,
-    props: [
-      { ...F1, name: "flowerbed" },
-      { ...F2, name: "flowerbed" },
-      { ...F4, name: "trash" },
-      { ...F5, name: "tree", back: true },
-      { ...C2, name: "bench", flip: true },
-      { ...B1, name: "bush", back: true },
-      { ...B2, name: "tree", back: true },
-      { ...S1, name: "lamp" },
-      { ...S3, name: "tree", back: true },
-      { ...S2, name: "flowerbed" },
-      { ...Q1, name: "lamp" },
-    ],
+    props: [],
   },
 
   // Финиш: фонари парой, дальше пусто — за финишем ничего нет
   outro: {
     house: { x: 22, d: 41 },
     drive: DRIVE,
-    props: [
-      { ...F1, name: "lamp" },
-      { ...F3, name: "lamp", flip: true },
-      { ...F2, name: "flowerbed" },
-      { ...C2, name: "bench", flip: true },
-      { ...B1, name: "bush", back: true },
-      { ...B3, name: "tree", back: true },
-      { ...S2, name: "tree", back: true },
-      { ...S3, name: "bush" },
-      { ...Q2, name: "flowerbed" },
-    ],
+    props: [],
   },
 };
 
@@ -316,11 +223,7 @@ const TOWN: Record<string, TownStop> = {
  * постоянным шагом и дерево на стыке остановок. Шаг переведён в глубину
  * остановки: 30 клеток — примерно 220px улицы при опорном окне.
  */
-const ROADSIDE: TownProp[] = [
-  { x: 4, d: 14, name: "lamp" },
-  { x: 4, d: 44, name: "lamp" },
-  { x: -7, d: 56, name: "tree", back: true },
-];
+const ROADSIDE: TownProp[] = [];
 
 /**
  * Фоновые кварталы: ряды жилых домов по внешним краям улицы, за домами
@@ -345,17 +248,7 @@ type TownBackdrop = Cell & {
   scale: number;
 };
 
-const BACKDROP: TownBackdrop[] = [
-  // За домом маршрута: выглядывают из-за крыши и у внешнего края
-  { x: 31, d: 3, tone: 2, scale: 0.82 },
-  { x: 38, d: 17, tone: 0, scale: 0.94, flip: true },
-  { x: 37, d: 36, tone: 1, scale: 1 },
-  { x: 39, d: 54, tone: 2, scale: 0.9, flip: true },
-  // Сторона текста: за колонкой, у внешнего края
-  { x: -37, d: 9, tone: 1, scale: 0.9, flip: true },
-  { x: -39, d: 30, tone: 2, scale: 0.86 },
-  { x: -36, d: 50, tone: 0, scale: 0.96, flip: true },
-];
+const BACKDROP: TownBackdrop[] = [];
 
 /** Базовая ширина фонового дома, базовые px: половина дома маршрута (460). */
 export const BACKDROP_WIDTH = 232;
